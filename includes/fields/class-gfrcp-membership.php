@@ -1,5 +1,7 @@
 <?php
 
+//use GFFormDetail;
+
 class GF_Field_Membership extends GF_Field_Select
 {
 
@@ -12,6 +14,13 @@ class GF_Field_Membership extends GF_Field_Select
      *
      * @return array
      */
+
+//    public function __construct()
+//    {
+//        $yep = GFFormDetail::forms_page();
+//        $yep->predefined_choices = [];
+//    }
+
     public function add_button($field_groups)
     {
 
@@ -71,24 +80,8 @@ class GF_Field_Membership extends GF_Field_Select
         );
     }
 
-    public function get_choices( $value ) {
-        $field = $this;
+    public static $levels;
 
-        $choices = [];
-
-        $levels_db = new RCP_Levels();
-        $levels    = $levels_db->get_levels( array( 'status' => 'active' ) );
-
-        foreach ($levels as $level) {
-            $choices[] = [
-                'text'  => $level->name,
-                'value' => $level->id
-            ];
-        }
-
-        $field->choices = $choices;
-        return GFCommon::get_select_choices( $field, $value );
-    }
 
     /**
      * Return the field title.
@@ -122,7 +115,6 @@ class GF_Field_Membership extends GF_Field_Select
             'text'  => $this->get_form_editor_field_title(),
         );
     }
-
 }
 
 GF_Fields::register(new GF_Field_Membership());
