@@ -1,5 +1,6 @@
 <?php
 
+namespace GF_RCP;
 
 class GFRCP_Fields {
 
@@ -32,9 +33,10 @@ class GFRCP_Fields {
                     <?php gform_tooltip( 'form_field_gfrcp_value' ) ?>
                 </label>
                 <select class="gfrcp-memberships">
+                    <option value="select">Choose a Membership</option>
                     <?php
 
-                    $levels_db = new RCP_Levels();
+                    $levels_db = new \RCP_Levels();
                     $levels    = $levels_db->get_levels( array( 'status' => 'active' ) );
 
                     foreach ($levels as $level) {
@@ -46,14 +48,16 @@ class GFRCP_Fields {
             </li>
             <script>
                 jQuery( ".gfrcp-memberships" ).change(function(e) {
-                    jQuery("#field_choices li .gf_insert_field_choice").last().click();
                     const gfrcpTitle = jQuery(this).children("option:selected").text();
                     const gfrcpVal = jQuery(this).children("option:selected").val();
-                    jQuery("#field_choices li .field-choice-text").last().val(gfrcpTitle);
-                    jQuery("#field_choices li .field-choice-text").last().attr("value",gfrcpTitle)
-                    jQuery("#field_choices li .field-choice-value").last().val(gfrcpVal);
-                    jQuery("#field_choices li .field-choice-value").last().attr("value",gfrcpVal);
-                    jQuery("#field_choices li .field-choice-text").trigger('input');
+                    if (gfrcpVal !== 'select') {
+                        jQuery("#field_choices li .gf_insert_field_choice").last().click();
+                        jQuery("#field_choices li .field-choice-text").last().val(gfrcpTitle);
+                        jQuery("#field_choices li .field-choice-text").last().attr("value", gfrcpTitle)
+                        jQuery("#field_choices li .field-choice-value").last().val(gfrcpVal);
+                        jQuery("#field_choices li .field-choice-value").last().attr("value", gfrcpVal);
+                        jQuery("#field_choices li .field-choice-text").trigger('input');
+                    }
                 })
                 jQuery( "#field_choices" ).on( "click", function() {
                     jQuery(".field-choice-value").prop('disabled', true);
@@ -94,7 +98,7 @@ class GFRCP_Fields {
     }
 
     public function set_defaults(){
-        $levels_db = new RCP_Levels();
+        $levels_db = new \RCP_Levels();
         $levels    = $levels_db->get_levels( array( 'status' => 'active' ) );
         ?>
         //this hook is fired in the middle of a switch statement,
@@ -112,7 +116,5 @@ class GFRCP_Fields {
         <?php
     }
 }
-
-GFRCP_Fields::get_instance();
 
 

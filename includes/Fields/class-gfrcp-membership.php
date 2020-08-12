@@ -1,9 +1,25 @@
 <?php
 
-//use GFFormDetail;
+namespace GF_RCP\Fields;
+
+if ( ! class_exists( 'GFForms' ) ) {
+    die();
+}
+
+use GF_Fields;
+use GF_Field_Select;
 
 class GF_Field_Membership extends GF_Field_Select
 {
+    protected static $_instance;
+
+    public static function get_instance() {
+        if ( ! self::$_instance instanceof GF_Field_Membership ) {
+            self::$_instance = new self();
+        }
+
+        return self::$_instance;
+    }
 
     public $type = 'membership';
 

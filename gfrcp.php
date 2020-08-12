@@ -12,9 +12,9 @@
 
 define('GF_SIMPLE_ADDON_VERSION', '2.0');
 
-add_action('gform_loaded', array('GF_Simple_AddOn_Bootstrap', 'load'), 5);
+add_action('gform_loaded', array('GF_RCP', 'load'), 5);
 
-class GF_Simple_AddOn_Bootstrap
+class GF_RCP
 {
 
     public static function load()
@@ -32,16 +32,14 @@ class GF_Simple_AddOn_Bootstrap
         require_once('includes/fields/class-gfrcp-password.php');
         require_once('includes/class-fields.php');
 
-        GFAddOn::register('GFSimpleAddOn');
+        GF_RCP\GFRCP_Fields::get_instance();
+        GFAddOn::register('GF_RCP\GF_RCP_AddOn');
     }
 
 }
 
 wp_enqueue_style( 'gfrcp-styles', plugin_dir_url( __FILE__ ) . '/css/style.css',false,'1.1','all');
-function gf_simple_addon()
-{
-    return GFSimpleAddOn::get_instance();
-}
+
 
 
 

@@ -1,9 +1,30 @@
 <?php
 
-class GF_Field_RCP_Password extends GF_Field_Password
+//Look to see if I should be registering this in the main plugin file
+
+namespace GF_RCP\Fields;
+
+if ( ! class_exists( 'GFForms' ) ) {
+    die();
+}
+
+use GF_Fields;
+use GF_Field_Text;
+
+class GF_Field_User_Email extends GF_Field_Text
 {
 
-    public $type = 'rcp_password';
+    protected static $_instance;
+
+    public static function get_instance() {
+        if ( ! self::$_instance instanceof GF_Field_User_Email ) {
+            self::$_instance = new self();
+        }
+
+        return self::$_instance;
+    }
+
+    public $type = 'useremail';
 
     /**
      * Adds the field button to the specified group.
@@ -29,7 +50,7 @@ class GF_Field_RCP_Password extends GF_Field_Password
             foreach ($field_groups as &$group) {
                 if ($group['name'] == $new_button['group']) {
 
-// Prepare username button.
+// Prepare user email button.
                     $username_button = array(
                         'class' => 'button',
                         'value' => $new_button['text'],
@@ -38,7 +59,7 @@ class GF_Field_RCP_Password extends GF_Field_Password
                         'onkeypress' => "StartAddField('{$this->type}');",
                     );
 
-// Insert username.
+// Insert user email.
                     array_splice($group['fields'], 0, 0, array($username_button));
 
                     break;
@@ -57,7 +78,7 @@ class GF_Field_RCP_Password extends GF_Field_Password
      */
     public function get_form_editor_field_title()
     {
-        return esc_attr__('Password', 'rcp-gravity-forms');
+        return esc_attr__('User Email', 'rcp-gravity-forms');
     }
 
     /**
@@ -84,4 +105,4 @@ class GF_Field_RCP_Password extends GF_Field_Password
 
 }
 
-GF_Fields::register(new GF_Field_RCP_Password());
+GF_Fields::register(new GF_Field_User_Email());

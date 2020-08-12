@@ -1,9 +1,28 @@
 <?php
 
-class GF_Field_User_Email extends GF_Field_Text
+namespace GF_RCP\Fields;
+
+if ( ! class_exists( 'GFForms' ) ) {
+    die();
+}
+
+use GF_Fields;
+use GF_Field_Text;
+
+class GF_Field_Username extends GF_Field_Text
 {
 
-    public $type = 'useremail';
+    protected static $_instance;
+
+    public static function get_instance() {
+        if ( ! self::$_instance instanceof GF_Field_Username ) {
+            self::$_instance = new self();
+        }
+
+        return self::$_instance;
+    }
+
+    public $type = 'username';
 
     /**
      * Adds the field button to the specified group.
@@ -29,7 +48,7 @@ class GF_Field_User_Email extends GF_Field_Text
             foreach ($field_groups as &$group) {
                 if ($group['name'] == $new_button['group']) {
 
-// Prepare user email button.
+// Prepare username button.
                     $username_button = array(
                         'class' => 'button',
                         'value' => $new_button['text'],
@@ -38,7 +57,7 @@ class GF_Field_User_Email extends GF_Field_Text
                         'onkeypress' => "StartAddField('{$this->type}');",
                     );
 
-// Insert user email.
+// Insert username.
                     array_splice($group['fields'], 0, 0, array($username_button));
 
                     break;
@@ -57,7 +76,7 @@ class GF_Field_User_Email extends GF_Field_Text
      */
     public function get_form_editor_field_title()
     {
-        return esc_attr__('User Email', 'rcp-gravity-forms');
+        return esc_attr__('Username', 'rcp-gravity-forms');
     }
 
     /**
@@ -84,4 +103,4 @@ class GF_Field_User_Email extends GF_Field_Text
 
 }
 
-GF_Fields::register(new GF_Field_User_Email());
+GF_Fields::register(new GF_Field_Username());

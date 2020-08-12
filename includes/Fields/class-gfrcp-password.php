@@ -1,9 +1,18 @@
 <?php
 
-class GF_Field_Username extends GF_Field_Text
+namespace GF_RCP\Fields;
+
+if ( ! class_exists( 'GFForms' ) ) {
+    die();
+}
+
+use GF_Fields;
+use GF_Field_Password;
+
+class GF_Field_RCP_Password extends GF_Field_Password
 {
 
-    public $type = 'username';
+    public $type = 'rcp_password';
 
     /**
      * Adds the field button to the specified group.
@@ -57,7 +66,7 @@ class GF_Field_Username extends GF_Field_Text
      */
     public function get_form_editor_field_title()
     {
-        return esc_attr__('Username', 'rcp-gravity-forms');
+        return esc_attr__('Password', 'rcp-gravity-forms');
     }
 
     /**
@@ -84,4 +93,4 @@ class GF_Field_Username extends GF_Field_Text
 
 }
 
-GF_Fields::register(new GF_Field_Username());
+GF_Fields::register(new GF_Field_RCP_Password());

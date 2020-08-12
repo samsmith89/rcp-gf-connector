@@ -1,8 +1,12 @@
 <?php
 
-GFForms::include_feed_addon_framework();;
+namespace GF_RCP;
 
-class GFSimpleAddOn extends GFFeedAddOn
+use GFFeedAddOn;
+
+\GFForms::include_feed_addon_framework();
+
+class GF_RCP_AddOn extends GFFeedAddOn
 {
 
     protected $_version = GF_SIMPLE_ADDON_VERSION;
@@ -18,7 +22,7 @@ class GFSimpleAddOn extends GFFeedAddOn
     public static function get_instance()
     {
         if (self::$_instance == null) {
-            self::$_instance = new GFSimpleAddOn();
+            self::$_instance = new GF_RCP_AddOn();
         }
 
         return self::$_instance;
