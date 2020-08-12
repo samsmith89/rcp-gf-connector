@@ -57,12 +57,13 @@ class GF_Field_Membership extends GF_Field_Select
         }
 
         return $field_groups;
+
     }
 
     public function get_form_editor_field_settings() {
         return array(
             'conditional_logic_field_setting',
-            'prepopulate_field_setting',
+//            'prepopulate_field_setting',
             'error_message_setting',
             'enable_enhanced_ui_setting',
             'label_setting',
@@ -71,7 +72,7 @@ class GF_Field_Membership extends GF_Field_Select
             'size_setting',
             'choices_setting',
             'rules_setting',
-//            'default_value_setting',
+            'default_value_setting'=> true,
             'placeholder_setting',
             'visibility_setting',
             'duplicate_setting',
@@ -80,7 +81,6 @@ class GF_Field_Membership extends GF_Field_Select
         );
     }
 
-    public static $levels;
 
 
     /**
@@ -99,10 +99,13 @@ class GF_Field_Membership extends GF_Field_Select
      *
      * @return string
      */
-    public function get_form_editor_inline_script_on_page_render()
-    {
-        return sprintf("function SetDefaultValues_%s(field) {field.label = '%s';}", $this->type, $this->get_form_editor_field_title()) . PHP_EOL;
-    }
+    //field.choices = [new Choice('Your First Choice', '1'), new Choice('Your Second Choice', '2'), new Choice('Your Third Choice', '3')];
+//    public function get_form_editor_inline_script_on_page_render()
+//    {
+//        return sprintf("function SetDefaultValues_%s(field) {
+//        field.label = '%s';
+//        }", $this->type, $this->get_form_editor_field_title()) . PHP_EOL;
+//    }
 
     /**
      * Assign the field button to the custom group.

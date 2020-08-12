@@ -236,9 +236,19 @@ class GFSimpleAddOn extends GFFeedAddOn
             'user_id' => $user_id
         ) );
 
+        $level_id = '';
+        $levels_db = new RCP_Levels();
+        $levels    = $levels_db->get_levels( array( 'status' => 'active' ) );
+
+        foreach ($levels as $level) {
+            if ($level->name === $membership_level) {
+                return $membership_id = $level->id;
+            }
+        }
+
         rcp_add_membership( array(
             'customer_id' => $customer_id,
-            'object_id' => $membership_level,
+            'object_id' => $level_id,
             'status' => 'active'
         ) );
 
