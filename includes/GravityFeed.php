@@ -3,13 +3,14 @@
 namespace GF_RCP;
 
 use GFFeedAddOn;
+use GFForms;
 
-\GFForms::include_feed_addon_framework();
+GFForms::include_payment_addon_framework();
 
-class GF_RCP_AddOn extends GFFeedAddOn
+class GravityFeed extends GFFeedAddOn
 {
 
-    protected $_version = GF_SIMPLE_ADDON_VERSION;
+//    protected $_version = GF_SIMPLE_ADDON_VERSION;
     protected $_min_gravityforms_version = '1.9';
     protected $_slug = 'simpleaddon';
     protected $_path = 'simpleaddon/simpleaddon.php';
@@ -22,7 +23,7 @@ class GF_RCP_AddOn extends GFFeedAddOn
     public static function get_instance()
     {
         if (self::$_instance == null) {
-            self::$_instance = new GF_RCP_AddOn();
+            self::$_instance = new GravityFeed();
         }
 
         return self::$_instance;
@@ -92,38 +93,6 @@ class GF_RCP_AddOn extends GFFeedAddOn
         echo 'This page appears in the Forms menu';
     }
 
-    public function plugin_settings_fields()
-    {
-        return array(
-            array(
-                'title' => esc_html__('Simple Add-On Settings', 'rcp-gravity-forms'),
-                'fields' => array(
-                    array(
-                        'name' => 'mytextbox',
-                        'tooltip' => esc_html__('This is the tooltip', 'rcp-gravity-forms'),
-                        'label' => esc_html__('This is the label', 'rcp-gravity-forms'),
-                        'type' => 'text',
-                        'class' => 'small',
-                        'feedback_callback' => array($this, 'is_valid_setting'),
-                    )
-                )
-            ),
-            array(
-                array(
-                    'title' => 'This is the title for Section 1',
-                    'description' => 'This is a description of the purpose of Section 1',
-                    'fields' => array(
-                        array(
-                            'label' => 'My Custom Field',
-                            'type' => 'my_nother_custom_field_type',
-                            'name' => 'my_custom_field'
-                        ),
-                    )
-                ),
-            )
-        );
-    }
-
     public function feed_settings_fields() {
         return array(
             array(
@@ -137,29 +106,6 @@ class GF_RCP_AddOn extends GFFeedAddOn
                         'tooltip'   => '<h6>' . esc_html__( 'Map Fields', 'sometextdomain' ) . '</h6>' . esc_html__( 'Select which Gravity Form fields pair with their respective third-party service fields.', 'sometextdomain' )
                     )
                 )
-            )
-        );
-    }
-
-    public function settings_my_nother_custom_field_type()
-    {
-        ?>
-        <div>
-            My custom field contains a bunch of settings:
-        </div>
-        <?php
-        $this->settings_text(
-            array(
-                'label' => 'Item 1',
-                'name' => 'my_custom[1]',
-                'default_value' => 'Item 1'
-            )
-        );
-        $this->settings_text(
-            array(
-                'label' => 'Item 2',
-                'name' => 'my_custom[2]',
-                'default_value' => 'Item 2'
             )
         );
     }

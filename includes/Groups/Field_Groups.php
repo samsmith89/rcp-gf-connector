@@ -1,7 +1,21 @@
 <?php
 
-class GF_Add_Field_Group extends GF_Field_Text
+namespace GF_RCP\Groups;
+
+use GF_Fields;
+use GF_Field_Text;
+
+class Field_Groups extends GF_Field_Text
 {
+	protected static $_instance;
+
+	public static function get_instance() {
+		if ( ! self::$_instance instanceof Field_Groups ) {
+			self::$_instance = new self();
+		}
+
+		return self::$_instance;
+	}
 
     public $type = 'RCP Field Group';
 
@@ -32,4 +46,4 @@ class GF_Add_Field_Group extends GF_Field_Text
     }
 }
 
-GF_Fields::register(new GF_Add_Field_Group());
+GF_Fields::register(new Field_Groups());

@@ -1,0 +1,17 @@
+{
+  "name": "missionlab/rcp-gravity-forms",
+  "type": "project",
+  "license": "GPL",
+  "authors": [
+    {
+      "name": "Sam Smith",
+      "email": "gsamsmith89@gmail.com"
+    }
+  ],
+  "require": {},
+  "autoload": {
+    "psr-4": {
+      "GF_RCP\\": "includes/"
+    }
+  }
+}
