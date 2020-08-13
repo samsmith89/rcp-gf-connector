@@ -60,11 +60,12 @@ class GF_RCP
 //        add_action( 'wp_enqueue_scripts', array( $this, 'scripts' ) );
 //        add_action( 'admin_enqueue_scripts', array( $this, 'admin_scripts' ) );
 //        add_action( 'wp_footer', array( $this, 'print_scripts' ), 11 );
-//        add_action( 'wp_enqueue_scripts', array( $this, 'styles' ) );
+        add_action( 'admin_enqueue_scripts', array( $this, 'styles' ) );
     }
 
     public function styles() {
-        wp_enqueue_style( $this->get_id() . '-styles', $this->get_plugin_url() . 'css/style.css', array(), $this->get_version() );
+        wp_enqueue_style( $this->get_id() . '-styles', $this->get_plugin_url() . '/assets/css/admin-styles.css', array(), $this->get_version() );
+        $something ="yes";
     }
 
     public function get_plugin_url() {
@@ -106,10 +107,6 @@ class GF_RCP
     }
 
 }
-
-//Add this above into "actions()"
-wp_enqueue_style( 'gfrcp-styles', plugin_dir_url( __FILE__ ) . '/css/style.css',false,'1.1','all');
-
 
 function gf_rcp() {
     return GF_RCP::get_instance();
