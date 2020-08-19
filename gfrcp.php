@@ -42,6 +42,7 @@ class GF_RCP
         GF_RCP\Fields\Useremail::get_instance();
         GF_RCP\Fields\Username::get_instance();
         GF_RCP\Gateways\PayPal::get_instance();
+        GF_RCP\Gateways\Stripe::get_instance();
         GFAddOn::register('GF_RCP\GravityFeed');
 
     }
