@@ -9,9 +9,9 @@ if ( ! class_exists( 'GFForms' ) ) {
 }
 
 use GF_Fields;
-use GF_Field_Text;
+use GF_Field_Email;
 
-class Useremail extends GF_Field_Text {
+class Useremail extends GF_Field_Email {
 
 	protected static $_instance;
 

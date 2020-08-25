@@ -46,7 +46,7 @@ class Fields {
 					<?php
 
 					foreach ( self::gfrcp_get_rcp_levels() as $level ) {
-						echo '<option value="' . $level->name . '">' . $level->name . '</option>';
+						echo '<option value="' . $level->name . '" data-price="' . rcp_currency_filter($level->price) . '">' . $level->name . '</option>';
 					}
 
 					?>
@@ -56,13 +56,17 @@ class Fields {
                 jQuery(".gfrcp-memberships").change(function (e) {
                     const gfrcpTitle = jQuery(this).children("option:selected").text();
                     const gfrcpVal = jQuery(this).children("option:selected").val();
+                    const gfrcpPrice = jQuery(this).children("option:selected").attr('data-price');
                     if (gfrcpVal !== 'select') {
                         jQuery("#field_choices li .gf_insert_field_choice").last().click();
                         jQuery("#field_choices li .field-choice-text").last().val(gfrcpTitle);
                         jQuery("#field_choices li .field-choice-text").last().attr("value", gfrcpTitle)
                         jQuery("#field_choices li .field-choice-value").last().val(gfrcpVal);
-                        jQuery("#field_choices li .field-choice-value").last().attr("value", gfrcpVal);
+                        jQuery("#field_choices li .field-choice-value").last().attr("value", gfrcpVal)
+                        jQuery("#field_choices li .field-choice-price").last().val(gfrcpPrice);
+                        jQuery("#field_choices li .field-choice-price").last().attr("value", gfrcpPrice);
                         jQuery("#field_choices li .field-choice-text").trigger('input');
+                        jQuery("#field_choices li .field-choice-price").trigger('input');
                     }
                 })
                 jQuery("#field_choices").on("click", function () {
@@ -108,7 +112,7 @@ class Fields {
 	public function set_defaults() {
 		$choices = [];
 		foreach ( self::gfrcp_get_rcp_levels() as $level ) {
-			$choice = 'new Choice("' . $level->name . '", ' . json_encode( $level->name ) . ')';
+			$choice = 'new Choice("' . $level->name . '", ' . json_encode( $level->name ) . ', "' . rcp_currency_filter($level->price) . '")';
 			$choices[] = $choice;
 		}
 		$text = implode( ", ", $choices);
