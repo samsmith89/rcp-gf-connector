@@ -16,7 +16,7 @@ class Gateways {
 	protected static $_instance;
 
 	public static function get_instance() {
-		if ( ! self::$_instance instanceof Stripe ) {
+		if ( ! self::$_instance instanceof Gateways ) {
 			self::$_instance = new self();
 		}
 
@@ -31,10 +31,10 @@ class Gateways {
 
 	public static function gfrcp_process_payment($entry, $subscription) {
 		$defaults = [
-			'inital_amount' => $entry['payment_amount'],
-			'recurring_amount' => $entry['payment_amount'],
-			'auto_renew' => true,
-			'times_billed' => '1',
+			'inital_amount' => $entry['payment_amount'], //in feed
+			'recurring_amount' => $entry['payment_amount'], //in feed
+			'auto_renew' => true, //in feed
+			'times_billed' => '1', //in feed
 			'status' => 'active',
 			'gateway_customer_id' => $subscription['customer_id'],
 			'gateway_subscription_id' => $subscription['subscription_id'],
@@ -66,8 +66,10 @@ class Gateways {
 
 		$membership = rcp_get_membership(GravityFeed::$membership_id);
 
-		$payment = new RCP_Payments();
+		$payment = new RCP_Payments(); // there are payment statuses in RCP. Use get_payments_membership from membership object
 
+		// This will be a payment update not creation. rcp_log();
+		//access the membership object then use method get_payments(). if there are payments and there is only 1 use it. Else grab last PHP "end($payments)"pending payment
 		$payment_data = [
 			'subscription'          => $subscription['subscription_id'],
 			'object_id'             => $membership->get_object_id(),

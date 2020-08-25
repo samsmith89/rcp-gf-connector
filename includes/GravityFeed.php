@@ -296,8 +296,10 @@ class GravityFeed extends GFFeedAddOn {
 		self::$membership_id = rcp_add_membership( array(
 			'customer_id' => $customer_id,
 			'object_id'   => $level_id,
-			'status'      => 'active'
+			'status'      => 'pending'
 		) );
+
+		//create inital pending payment
 
 		gform_update_meta( $entry['id'], 'rcp_membership_id', self::$membership_id );
 

@@ -44,6 +44,8 @@ class GF_RCP
 	    GF_RCP\Gateways::get_instance();
         GF_RCP\Gateways\PayPal::get_instance();
         GF_RCP\Gateways\Stripe::get_instance();
+        GF_RCP\Gateways\Paypal_Pro::get_instance();
+        GF_RCP\Gateways\Twocheckout::get_instance();
         GFAddOn::register('GF_RCP\GravityFeed');
 
     }
