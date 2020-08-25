@@ -2,7 +2,6 @@
 
 namespace GF_RCP\Gateways;
 
-use GF_RCP\GravityFeed as GravityFeed;
 use RCP_Payments;
 
 if ( ! class_exists( 'GFForms' ) ) {
@@ -24,38 +23,25 @@ class Stripe {
 	}
 
 	public function __construct() {
-		add_action( 'gform_post_subscription_started', [ $this, 'gfrcp_stripe_get_payment' ], 10, 2 );
-		// gform_post_subscription_started
-		// gform_post_payment_completed
+		add_filter( 'gform_stripe_webhook', [ $this, 'gfrcp_stripe_webhook' ], 10, 2 );
 	}
 
-	public static function gfrcp_stripe_get_payment($entry, $subscription) {
-		$args = [
-			'inital_amount' => $entry['payment_amount'],
-			'recurring_amount' => $entry['payment_amount'],
-			'auto_renew' => true,
-			'times_billed' => '1',// see if this can be configured from the settings
-			'status' => 'active',
-			'gateway_customer_id' => $subscription['customer_id'],
-			'gateway_subscription_id' => $subscription['subscription_id'],
-			'gateway' => 'stripe',
+	public static function gfrcp_stripe_webhook($action, $event) {
 
+		$membership_id = gform_get_meta( $action['entry_id'], 'rcp_membership_id' );
 
-		];
-		rcp_update_membership( GravityFeed::$membership_id, $args );
-
-		$membership = rcp_get_membership(GravityFeed::$membership_id);
+		$membership = rcp_get_membership($membership_id);
 
 		$payment = new RCP_Payments();
 
 		$payment_data = [
-			'subscription'          => $subscription['subscription_id'],
+			'subscription'          => $action['subscription_id'],
 			'object_id'             => $membership->get_object_id(),
 			'object_type'           => $membership->get_object_type(),
 			'date'                  => date( 'Y-m-d H:i:s', current_time( 'timestamp' ) ),
-			'amount'                => $entry['payment_amount'], // Total amount after fees/credits/discounts are added.
+			'amount'                => $action['amount'], // Total amount after fees/credits/discounts are added.
 			'user_id'               => $membership->get_user_id(),
-			'customer_id'           => $subscription['customer_id'],
+			'customer_id'           => $membership->get_customer_id(), // want RCP id
 			'membership_id'         => $membership->get_id(),
 			'payment_type'          => '',
 			'transaction_type'      => 'new',
@@ -63,7 +49,7 @@ class Stripe {
 			'transaction_id'        => '',
 			'status'                => 'complete',
 			'gateway'               => $membership->get_gateway(),
-			'subtotal'              => $entry['payment_amount'], // Base price of the membership level.
+			'subtotal'              => $action['amount'], // Base price of the membership level.
 			'credits'               => 0.00, // Proration credits.
 			'fees'                  => 0.00, // Fees.
 			'discount_amount'       => 0.00, // Discount amount from discount code.
@@ -71,5 +57,7 @@ class Stripe {
 		];
 
 		$payment->insert( $payment_data );
+
+		return $action;
 	}
 }

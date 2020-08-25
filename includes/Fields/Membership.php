@@ -7,9 +7,10 @@ if ( ! class_exists( 'GFForms' ) ) {
 }
 
 use GF_Fields;
-use GF_Field_Select;
+use GF_Field_Product;
+use GF_RCP\Fields;
 
-class Membership extends GF_Field_Select
+class Membership extends GF_Field_Product
 {
     protected static $_instance;
 
@@ -31,11 +32,7 @@ class Membership extends GF_Field_Select
      * @return array
      */
 
-//    public function __construct()
-//    {
-//        $yep = GFFormDetail::forms_page();
-//        $yep->predefined_choices = [];
-//    }
+
 
     public function add_button($field_groups)
     {
@@ -61,7 +58,6 @@ class Membership extends GF_Field_Select
                         'data-type' => $this->type,
                         'onclick' => "StartAddField('{$this->type}');",
                         'onkeypress' => "StartAddField('{$this->type}');",
-                        // Get the active RCP memberhsips and echo them into choices
                     );
 
 // Insert membership button.
@@ -78,22 +74,13 @@ class Membership extends GF_Field_Select
 
     public function get_form_editor_field_settings() {
         return array(
-            'conditional_logic_field_setting',
-//            'prepopulate_field_setting',
-            'error_message_setting',
-            'enable_enhanced_ui_setting',
-            'label_setting',
-            'label_placement_setting',
-            'admin_label_setting',
-            'size_setting',
-            'choices_setting',
-            'rules_setting',
-            'default_value_setting'=> true,
-            'placeholder_setting',
-            'visibility_setting',
-            'duplicate_setting',
-            'description_setting',
-            'css_class_setting',
+	        'product_field_type_setting',
+	        'prepopulate_field_setting',
+	        'label_setting',
+	        'admin_label_setting',
+	        'label_placement_setting',
+	        'description_setting',
+	        'css_class_setting',
         );
     }
 
@@ -134,8 +121,8 @@ class Membership extends GF_Field_Select
 					<option value="select">Choose a Membership</option>
 					<?php
 
-					foreach ( self::gfrcp_get_rcp_levels() as $level ) {
-						echo '<option value="' . $level->name . '">' . $level->name . '</option>';
+					foreach ( Fields::gfrcp_get_rcp_levels() as $level ) {
+						echo '<option value="' . $level->name . '" data-price="' . rcp_currency_filter($level->price) . '">' . $level->name . '</option>';
 					}
 
 					?>
@@ -194,32 +181,6 @@ class Membership extends GF_Field_Select
 		return $classes;
 	}
 
-	public function set_defaults() {
-//        put together all the strings here. OB start into a variable then echo the variable into the hook.
-
-//		$js = '';
-//		foreach ( self::$levels as $level ) {
-//			$js .= 'new Choice("' . $level->name . '", ' . json_encode( $level->name ) . '),';;
-//		}
-//		ob_start(); ?>
-		<!---->
-		<!--		--><?php
-//		$js = ob_get_clean();
-//		?>
-		//this hook is fired in the middle of a switch statement,
-		//so we need to add a case for our new field type
-		case "membership" :
-		field.label = "Membership"; //setting the default field label
-		field.choices = new Array(<?php
-
-		foreach ( self::gfrcp_get_rcp_levels() as $level ) {
-			echo 'new Choice("' . $level->name . '", ' . json_encode( $level->name ) . '),';
-		}
-
-		?>);
-		break;
-		<?php
-	}
 }
 
 GF_Fields::register(new Membership());

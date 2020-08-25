@@ -299,6 +299,8 @@ class GravityFeed extends GFFeedAddOn {
 			'status'      => 'active'
 		) );
 
+		gform_update_meta( $entry['id'], 'rcp_membership_id', self::$membership_id );
+
 	}
 
 }
