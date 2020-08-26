@@ -5,6 +5,7 @@ namespace GF_RCP;
 use GFFeedAddOn;
 use GFForms;
 use RCP_Levels;
+use RCP_Payments;
 
 GFForms::include_feed_addon_framework();
 
@@ -31,7 +32,8 @@ class GravityFeed extends GFFeedAddOn {
 
 	public function init() {
 		parent::init();
-		add_filter( 'gform_submit_button', array( $this, 'form_submit_button' ), 10, 2 );
+		add_filter( 'gform_submit_button', [ $this, 'form_submit_button' ] , 100, 2 );
+		add_action( 'gform_trigger_payment_delayed_feeds', [ $this, 'process_feed' ], 10, 3 );
 	}
 
 	public function scripts() {
@@ -275,31 +277,59 @@ class GravityFeed extends GFFeedAddOn {
 		$username         = $this->get_field_value( $form, $entry, rgar( $feed['meta'], 'RCPMembershipFields_username' ) );
 		$email            = $this->get_field_value( $form, $entry, rgar( $feed['meta'], 'RCPMembershipFields_useremail' ) );
 		$password         = $this->get_field_value( $form, $entry, rgar( $feed['meta'], 'RCPMembershipFields_rcp_password' ) );
-		$membership_level = $this->get_field_value( $form, $entry, rgar( $feed['meta'], 'RCPMembershipFields_membership_level' ) );
+		$membership_level_id = $feed['meta']['RCPMembershipFields_membership_level'];
+		$membership_level = rgexplode( '|', $entry[$membership_level_id], 2 );
 
 		$user_id = wp_create_user( $username, $password, $email );
 
-		$customer_id = rcp_add_customer( array(
-			'user_id' => $user_id
-		) );
+		$customer_id = rcp_add_customer( [ 'user_id' => $user_id ] );
 
 		$level_id  = '';
 		$levels_db = new RCP_Levels();
 		$levels    = $levels_db->get_levels( array( 'status' => 'active' ) );
 
 		foreach ( $levels as $level ) {
-			if ( $level->name === $membership_level ) {
+			if ( $level->name === $membership_level[0] ) {
 				$level_id = $level->id;
 			}
 		}
 
 		self::$membership_id = rcp_add_membership( array(
+			'inital_amount' => $entry['payment_amount'],
+			'recurring_amount' => $entry['payment_amount'],
+			'auto_renew' => true,
+			'times_billed' => '1',
 			'customer_id' => $customer_id,
 			'object_id'   => $level_id,
 			'status'      => 'pending'
 		) );
 
-		//create inital pending payment
+		$membership = rcp_get_membership(self::$membership_id);
+
+		$payment_obj = new RCP_Payments();
+
+		$payment_data = [
+			'subscription'          => $membership_level[0],
+			'object_id'             => $membership->get_object_id(),
+			'object_type'           => $membership->get_object_type(),
+			'date'                  => date( 'Y-m-d H:i:s', current_time( 'timestamp' ) ),
+			'amount'                => $membership_level[1], // Total amount after fees/credits/discounts are added.
+			'user_id'               => $membership->get_user_id(),
+			'customer_id'           => $membership->get_customer_id(), // want RCP id
+			'membership_id'         => $membership->get_id(),
+			'payment_type'          => '',
+			'transaction_type'      => 'new',
+			'subscription_key'      => '',
+			'transaction_id'        => '',
+			'status'                => 'pending',
+			'subtotal'              => $membership_level[1], // Base price of the membership level.
+			'credits'               => 0.00, // Proration credits.
+			'fees'                  => 0.00, // Fees.
+			'discount_amount'       => 0.00, // Discount amount from discount code.
+			'discount_code'         => ''
+		];
+
+		$payment_obj->insert( $payment_data );
 
 		gform_update_meta( $entry['id'], 'rcp_membership_id', self::$membership_id );
 

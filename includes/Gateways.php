@@ -31,10 +31,6 @@ class Gateways {
 
 	public static function gfrcp_process_payment($entry, $subscription) {
 		$defaults = [
-			'inital_amount' => $entry['payment_amount'], //in feed
-			'recurring_amount' => $entry['payment_amount'], //in feed
-			'auto_renew' => true, //in feed
-			'times_billed' => '1', //in feed
 			'status' => 'active',
 			'gateway_customer_id' => $subscription['customer_id'],
 			'gateway_subscription_id' => $subscription['subscription_id'],
@@ -42,7 +38,6 @@ class Gateways {
 
 		$payment_gateway = gform_get_meta( $entry['id'], 'payment_gateway' );
 
-		//set up the switch to add the gateway specific args from above
 		switch ( $payment_gateway ) {
 			case 'gravityformsstripe':
 				$defaults['gateway'] = 'stripe';
@@ -57,41 +52,34 @@ class Gateways {
 				$defaults['gateway'] = 'twocheckout';
 				break;
 			default:
-				$defaults['gateway'] = 'generic';
+				$defaults['gateway'] = '';
 		};
-
-//		$merged = wp_parse_args( $args, $defaults );
 
 		rcp_update_membership( GravityFeed::$membership_id, $defaults  );
 
 		$membership = rcp_get_membership(GravityFeed::$membership_id);
 
-		$payment = new RCP_Payments(); // there are payment statuses in RCP. Use get_payments_membership from membership object
+		$pending_payments = [];
+		$payments = $membership->get_payments();
+
+		foreach ( $payments as $pmt ) {
+			if ( 'pending' === $pmt->status ) {
+				$pending_payments[] = $pmt;
+			}
+		}
+
+		$latest_pending_payment = end($pending_payments);
+		$payment_obj = new RCP_Payments(); // there are payment statuses in RCP. Use get_payments_membership from membership object
 
 		// This will be a payment update not creation. rcp_log();
 		//access the membership object then use method get_payments(). if there are payments and there is only 1 use it. Else grab last PHP "end($payments)"pending payment
 		$payment_data = [
-			'subscription'          => $subscription['subscription_id'],
-			'object_id'             => $membership->get_object_id(),
-			'object_type'           => $membership->get_object_type(),
-			'date'                  => date( 'Y-m-d H:i:s', current_time( 'timestamp' ) ),
-			'amount'                => $entry['payment_amount'], // Total amount after fees/credits/discounts are added.
-			'user_id'               => $membership->get_user_id(),
-			'customer_id'           => $membership->get_customer_id(), // want RCP id
-			'membership_id'         => $membership->get_id(),
-			'payment_type'          => '',
-			'transaction_type'      => 'new',
 			'subscription_key'      => '',
 			'transaction_id'        => '',
 			'status'                => 'complete',
 			'gateway'               => $membership->get_gateway(),
-			'subtotal'              => $entry['payment_amount'], // Base price of the membership level.
-			'credits'               => 0.00, // Proration credits.
-			'fees'                  => 0.00, // Fees.
-			'discount_amount'       => 0.00, // Discount amount from discount code.
-			'discount_code'         => ''
 		];
 
-		$payment->insert( $payment_data );
+		$payment_obj->update( $latest_pending_payment->id, $payment_data );
 	}
 }
