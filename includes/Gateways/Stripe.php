@@ -35,25 +35,21 @@ class Stripe {
 		$payment = new RCP_Payments();
 
 		$payment_data = [
-			'subscription'          => $action['subscription_id'],
+			'subscription'          => $membership->get_membership_level_name(),
 			'object_id'             => $membership->get_object_id(),
-			'object_type'           => $membership->get_object_type(),
+			'object_type'           => 'subscription',
 			'date'                  => date( 'Y-m-d H:i:s', current_time( 'timestamp' ) ),
 			'amount'                => $action['amount'], // Total amount after fees/credits/discounts are added.
 			'user_id'               => $membership->get_user_id(),
 			'customer_id'           => $membership->get_customer_id(), // want RCP id
 			'membership_id'         => $membership->get_id(),
 			'payment_type'          => '',
-			'transaction_type'      => 'new',
-			'subscription_key'      => '',
-			'transaction_id'        => '',
+			'transaction_type'      => 'renewal',
+			'subscription_key'      => $membership->get_subscription_key(),
+			'transaction_id'        => '', //get this from incoming JSON
 			'status'                => 'complete',
 			'gateway'               => $membership->get_gateway(),
 			'subtotal'              => $action['amount'], // Base price of the membership level.
-			'credits'               => 0.00, // Proration credits.
-			'fees'                  => 0.00, // Fees.
-			'discount_amount'       => 0.00, // Discount amount from discount code.
-			'discount_code'         => ''
 		];
 
 		$payment->insert( $payment_data );
