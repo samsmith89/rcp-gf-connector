@@ -36,25 +36,6 @@ class Gateways {
 			'gateway_subscription_id' => $subscription['subscription_id'],
 		];
 
-		$payment_gateway = gform_get_meta( $entry['id'], 'payment_gateway' );
-
-		switch ( $payment_gateway ) {
-			case 'gravityformsstripe':
-				$defaults['gateway'] = 'stripe';
-				break;
-			case 'gravityformspaypal':
-				$defaults['gateway'] = 'paypal';
-				break;
-			case 'gravityformspaypalpaymentspro':
-				$defaults['gateway'] = 'paypal_pro';
-				break;
-			case 'gravityforms2checkout':
-				$defaults['gateway'] = 'twocheckout';
-				break;
-			default:
-				$defaults['gateway'] = '';
-		};
-
 		rcp_update_membership( GravityFeed::$membership_id, $defaults  );
 
 		$membership = rcp_get_membership(GravityFeed::$membership_id);
@@ -77,7 +58,6 @@ class Gateways {
 			'subscription_key'      => '',
 			'transaction_id'        => '',
 			'status'                => 'complete',
-			'gateway'               => $membership->get_gateway(),
 		];
 
 		$payment_obj->update( $latest_pending_payment->id, $payment_data );

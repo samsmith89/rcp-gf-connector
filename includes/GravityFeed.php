@@ -279,6 +279,24 @@ class GravityFeed extends GFFeedAddOn {
 		$password         = $this->get_field_value( $form, $entry, rgar( $feed['meta'], 'RCPMembershipFields_rcp_password' ) );
 		$membership_level_id = $feed['meta']['RCPMembershipFields_membership_level'];
 		$membership_level = rgexplode( '|', $entry[$membership_level_id], 2 );
+		global $gf_payment_gateway;
+
+		switch ( $gf_payment_gateway ) {
+			case 'gravityformsstripe':
+				$payment_gateway = 'stripe';
+				break;
+			case 'gravityformspaypal':
+				$payment_gateway = 'paypal';
+				break;
+			case 'gravityformspaypalpaymentspro':
+				$payment_gateway = 'paypal_pro';
+				break;
+			case 'gravityforms2checkout':
+				$payment_gateway = 'twocheckout';
+				break;
+			default:
+				$payment_gateway = '';
+		};
 
 		$user_id = wp_create_user( $username, $password, $email );
 
@@ -301,7 +319,8 @@ class GravityFeed extends GFFeedAddOn {
 			'times_billed' => '1',
 			'customer_id' => $customer_id,
 			'object_id'   => $level_id,
-			'status'      => 'pending'
+			'status'      => 'pending',
+			'gateway'     => $payment_gateway
 		) );
 
 		$membership = rcp_get_membership(self::$membership_id);
@@ -326,7 +345,8 @@ class GravityFeed extends GFFeedAddOn {
 			'credits'               => 0.00, // Proration credits.
 			'fees'                  => 0.00, // Fees.
 			'discount_amount'       => 0.00, // Discount amount from discount code.
-			'discount_code'         => ''
+			'discount_code'         => '',
+			'gateway'               => $payment_gateway
 		];
 
 		$payment_obj->insert( $payment_data );
