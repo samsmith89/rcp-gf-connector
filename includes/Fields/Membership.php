@@ -74,7 +74,7 @@ class Membership extends GF_Field_Product
 
     public function get_form_editor_field_settings() {
         return array(
-	        'product_field_type_setting',
+//	        'product_field_type_setting',
 	        'prepopulate_field_setting',
 	        'label_setting',
 	        'admin_label_setting',
@@ -108,50 +108,6 @@ class Membership extends GF_Field_Product
             'text'  => $this->get_form_editor_field_title(),
         );
     }
-
-	public function my_standard_settings( $position, $form_id ) {
-		if ( $position == 1600 ) {
-			?>
-			<li class="gfrcp_setting field_setting">
-				<label for="field_admin_label">
-					<?php esc_html_e( 'RCP Memberships', 'gravityforms' ); ?>
-					<?php gform_tooltip( 'form_field_gfrcp_value' ) ?>
-				</label>
-				<select class="gfrcp-memberships">
-					<option value="select">Choose a Membership</option>
-					<?php
-
-					foreach ( Fields::gfrcp_get_rcp_levels() as $level ) {
-						echo '<option value="' . $level->name . '" data-price="' . rcp_currency_filter($level->price) . '">' . $level->name . '</option>';
-					}
-
-					?>
-				</select>
-			</li>
-			<script>
-                jQuery(".gfrcp-memberships").change(function (e) {
-                    const gfrcpTitle = jQuery(this).children("option:selected").text();
-                    const gfrcpVal = jQuery(this).children("option:selected").val();
-                    if (gfrcpVal !== 'select') {
-                        jQuery("#field_choices li .gf_insert_field_choice").last().click();
-                        jQuery("#field_choices li .field-choice-text").last().val(gfrcpTitle);
-                        jQuery("#field_choices li .field-choice-text").last().attr("value", gfrcpTitle)
-                        jQuery("#field_choices li .field-choice-value").last().val(gfrcpVal);
-                        jQuery("#field_choices li .field-choice-value").last().attr("value", gfrcpVal);
-                        jQuery("#field_choices li .field-choice-text").trigger('input');
-                    }
-                })
-                jQuery("#field_choices").on("click", function () {
-                    jQuery(".field-choice-value").prop('disabled', true);
-                });
-                jQuery("#field_choices").on("keydown", function () {
-                    jQuery(".field-choice-value").prop('disabled', true);
-                });
-
-			</script>
-			<?php
-		}
-	}
 
 	public function editor_script() {
 		?>

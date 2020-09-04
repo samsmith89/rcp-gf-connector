@@ -1,4 +1,5 @@
-.gfrcp-membership-field .field-choice-value {
+.gfrcp-membership-field .field-choice-value,
+.gfrcp-membership-field .field-choice-price {
     background: rgba(255,255,255,.5);
     border-color: rgba(222,222,222,.75);
     box-shadow: inset 0 1px 2px rgba(0,0,0,.04);
@@ -6,6 +7,14 @@
     pointer-events: none;
 }
 
-input[value="Bulk Add / Predefined Choices"] {
+.gfrcp-membership-field input[value="Bulk Add / Predefined Choices"] {
+    display: none !important;
+}
+
+.gfrcp-membership-field .other_choice_setting {
+    display: none !important;
+}
+
+.gfrcp-membership-field .gf_insert_field_choice {
     display: none !important;
 }

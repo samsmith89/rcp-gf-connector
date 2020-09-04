@@ -11,13 +11,13 @@ GFForms::include_feed_addon_framework();
 
 class GravityFeed extends GFFeedAddOn {
 
-//    protected $_version = GF_SIMPLE_ADDON_VERSION;
+//    protected $_version = GFRCP_ADDON_VERSION;
 	protected $_min_gravityforms_version = '1.9';
-	protected $_slug = 'simpleaddon';
-	protected $_path = 'simpleaddon/simpleaddon.php';
+	protected $_slug = 'gfrcp';
+	protected $_path = 'gfrcp/gfrcp.php';
 	protected $_full_path = __FILE__;
-	protected $_title = 'Gravity Forms Simple Add-On';
-	protected $_short_title = 'Simple Add-On';
+	protected $_title = 'Gravity Forms - Restrict Content Pro Addon';
+	protected $_short_title = 'GF RCP Connector';
 
 	private static $_instance = null;
 	public static $membership_id = '';
@@ -30,68 +30,38 @@ class GravityFeed extends GFFeedAddOn {
 		return self::$_instance;
 	}
 
-	public function init() {
-		parent::init();
-		add_filter( 'gform_submit_button', [ $this, 'form_submit_button' ] , 100, 2 );
-		add_action( 'gform_trigger_payment_delayed_feeds', [ $this, 'process_feed' ], 10, 3 );
-	}
-
-	public function scripts() {
-		$scripts = array(
-			array(
-				'handle'  => 'my_script_js',
-				'src'     => $this->get_base_url() . '/js/my_script.js',
-				'version' => $this->_version,
-				'deps'    => array( 'jquery' ),
-				'strings' => array(
-					'first'  => esc_html__( 'First Choice', 'rcp-gravity-forms' ),
-					'second' => esc_html__( 'Second Choice', 'rcp-gravity-forms' ),
-					'third'  => esc_html__( 'Third Choice', 'rcp-gravity-forms' )
-				),
-				'enqueue' => array(
-					array(
-						'admin_page' => array( 'form_settings' ),
-						'tab'        => 'simpleaddon'
-					)
-				)
-			),
-
-		);
-
-		return array_merge( parent::scripts(), $scripts );
-	}
-
-	public function styles() {
-		$styles = array(
-			array(
-				'handle'  => 'my_styles_css',
-				'src'     => $this->get_base_url() . '/css/my_styles.css',
-				'version' => $this->_version,
-				'enqueue' => array(
-					array( 'field_types' => array( 'poll' ) )
-				)
-			)
-		);
-
-		return array_merge( parent::styles(), $styles );
-	}
-
-	function form_submit_button( $button, $form ) {
-		$settings = $this->get_form_settings( $form );
-		if ( isset( $settings['enabled'] ) && true == $settings['enabled'] ) {
-			$text   = $this->get_plugin_setting( 'mytextbox' );
-			$button = "<div>{$text}</div>" . $button;
-		}
-
-		return $button;
-	}
-
-	public function plugin_page() {
-		echo 'This page appears in the Forms menu';
-	}
+//	public function init() {
+//		parent::init();
+//	}
 
 	public function feed_settings_fields() {
 		return array(
+			array(
+				'title'  => esc_html__( 'RCP Connector Settings', 'rcp-gravity-forms' ),
+				'fields' => array(
+					array(
+						'label'             => 'GFRCP Feed Name',
+						'type'              => 'text',
+						'name'              => 'gfrcp_feed_name',
+						'tooltip'           => 'This is the name provided to the feed',
+						'class'             => 'medium',
+						'required'          => 'true',
+						'feedback_callback' => array( $this, 'is_valid_setting' )
+					),
+					array(
+						'label'   => 'Enable RCP Connector',
+						'type'    => 'checkbox',
+						'name'    => 'enabled',
+						'tooltip' => 'Enable this setting to connect your form submissions to RCP',
+						'choices' => array(
+							array(
+								'label' => 'Enabled',
+								'name'  => 'enabled'
+							)
+						)
+					),
+				),
+			),
 			array(
 				'title'  => esc_html__( 'Restrict Content Pro Mapping', 'rcp-gravity-forms' ),
 				'fields' => array(
@@ -103,128 +73,8 @@ class GravityFeed extends GFFeedAddOn {
 						'tooltip'   => '<h6>' . esc_html__( 'Map Fields', 'sometextdomain' ) . '</h6>' . esc_html__( 'Select which Gravity Form fields pair with their respective third-party service fields.', 'sometextdomain' )
 					)
 				)
-			),
-//			array(
-//				'description' => '',
-//				'fields'      => array(
-//					array(
-//						'name'     => 'feedName',
-//						'label'    => esc_html__( 'Name', 'gravityforms' ),
-//						'type'     => 'text',
-//						'class'    => 'medium',
-//						'required' => true,
-//						'tooltip'  => '<h6>' . esc_html__( 'Name', 'gravityforms' ) . '</h6>' . esc_html__( 'Enter a feed name to uniquely identify this setup.', 'gravityforms' )
-//					),
-//					array(
-//						'name'     => 'transactionType',
-//						'label'    => esc_html__( 'Transaction Type', 'gravityforms' ),
-//						'type'     => 'select',
-//						'onchange' => "jQuery(this).parents('form').submit();",
-//						'choices'  => array(
-//							array(
-//								'label' => esc_html__( 'Select a transaction type', 'gravityforms' ),
-//								'value' => ''
-//							),
-//							array(
-//								'label' => esc_html__( 'Products and Services', 'gravityforms' ),
-//								'value' => 'product'
-//							),
-//							array( 'label' => esc_html__( 'Subscription', 'gravityforms' ), 'value' => 'subscription' ),
-//						),
-//						'tooltip'  => '<h6>' . esc_html__( 'Transaction Type', 'gravityforms' ) . '</h6>' . esc_html__( 'Select a transaction type.', 'gravityforms' )
-//					),
-//				)
-//			),
-//			array(
-//				'title'      => esc_html__( 'Subscription Settings', 'gravityforms' ),
-//				'dependency' => array(
-//					'field'  => 'transactionType',
-//					'values' => array( 'subscription' )
-//				),
-//				'fields'     => array(
-//					array(
-//						'name'     => 'recurringAmount',
-//						'label'    => esc_html__( 'Recurring Amount', 'gravityforms' ),
-//						'type'     => 'select',
-//						'choices'  => $this->recurring_amount_choices(),
-//						'required' => true,
-//						'tooltip'  => '<h6>' . esc_html__( 'Recurring Amount', 'gravityforms' ) . '</h6>' . esc_html__( "Select which field determines the recurring payment amount, or select 'Form Total' to use the total of all pricing fields as the recurring amount.", 'gravityforms' )
-//					),
-//					array(
-//						'name'    => 'billingCycle',
-//						'label'   => esc_html__( 'Billing Cycle', 'gravityforms' ),
-//						'type'    => 'billing_cycle',
-//						'tooltip' => '<h6>' . esc_html__( 'Billing Cycle', 'gravityforms' ) . '</h6>' . esc_html__( 'Select your billing cycle.  This determines how often the recurring payment should occur.', 'gravityforms' )
-//					),
-//					array(
-//						'name'    => 'recurringTimes',
-//						'label'   => esc_html__( 'Recurring Times', 'gravityforms' ),
-//						'type'    => 'select',
-//						'choices' => array(
-//							             array(
-//								             'label' => esc_html__( 'infinite', 'gravityforms' ),
-//								             'value' => '0'
-//							             )
-//						             ) + $this->get_numeric_choices( 1, 100 ),
-//						'tooltip' => '<h6>' . esc_html__( 'Recurring Times', 'gravityforms' ) . '</h6>' . esc_html__( 'Select how many times the recurring payment should be made.  The default is to bill the customer until the subscription is canceled.', 'gravityforms' )
-//					),
-//					array(
-//						'name'  => 'setupFee',
-//						'label' => esc_html__( 'Setup Fee', 'gravityforms' ),
-//						'type'  => 'setup_fee',
-//					),
-//					array(
-//						'name'    => 'trial',
-//						'label'   => esc_html__( 'Trial', 'gravityforms' ),
-//						'type'    => 'trial',
-//						'hidden'  => $this->get_setting( 'setupFee_enabled' ),
-//						'tooltip' => '<h6>' . esc_html__( 'Trial Period', 'gravityforms' ) . '</h6>' . esc_html__( 'Enable a trial period.  The user\'s recurring payment will not begin until after this trial period.', 'gravityforms' )
-//					),
-//				)
-//			),
-//			array(
-//				'title'      => esc_html__( 'Products &amp; Services Settings', 'gravityforms' ),
-//				'dependency' => array(
-//					'field'  => 'transactionType',
-//					'values' => array( 'product', 'donation' )
-//				),
-//				'fields'     => array(
-//					array(
-//						'name'          => 'paymentAmount',
-//						'label'         => esc_html__( 'Payment Amount', 'gravityforms' ),
-//						'type'          => 'select',
-//						'choices'       => $this->product_amount_choices(),
-//						'required'      => true,
-//						'default_value' => 'form_total',
-//						'tooltip'       => '<h6>' . esc_html__( 'Payment Amount', 'gravityforms' ) . '</h6>' . esc_html__( "Select which field determines the payment amount, or select 'Form Total' to use the total of all pricing fields as the payment amount.", 'gravityforms' )
-//					),
-//				)
-//			),
-//			array(
-//				'title'      => esc_html__( 'Other Settings', 'gravityforms' ),
-//				'dependency' => array(
-//					'field'  => 'transactionType',
-//					'values' => array( 'subscription', 'product', 'donation' )
-//				),
-//				'fields'     => $this->other_settings_fields()
-//			),
+			)
 		);
-	}
-
-	public function settings_my_custom_field_type( $field, $echo = true ) {
-		echo '<div>' . esc_html__( 'My custom field contains a few settings:', 'rcp-gravity-forms' ) . '</div>';
-
-// get the text field settings from the main field and then render the text field
-		$text_field = $field['args']['text'];
-		$this->settings_text( $text_field );
-
-// get the checkbox field settings from the main field and then render the checkbox field
-		$checkbox_field = $field['args']['checkbox'];
-		$this->settings_checkbox( $checkbox_field );
-	}
-
-	public function is_valid_setting( $value ) {
-		return strlen( $value ) > 5;
 	}
 
 	public function standard_fields_for_feed_mapping() {
@@ -241,44 +91,41 @@ class GravityFeed extends GFFeedAddOn {
 				'label'         => esc_html__( 'Email', 'rcp-gravity-forms' ),
 				'required'      => true,
 				'field_type'    => array( 'name', 'useremail', 'hidden' ),
-				'default_value' => $this->get_first_field_by_type( 'name', 6 ),
+				'default_value' => $this->get_first_field_by_type( 'email', 6 ),
 			),
 			array(
 				'name'          => 'rcp_password',
 				'label'         => esc_html__( 'Password', 'rcp-gravity-forms' ),
-				'required'      => false,
+				'required'      => true,
 				'field_type'    => array( 'rcp_password', 'hidden' ),
-				'default_value' => $this->get_first_field_by_type( 'password' ),
+				'default_value' => $this->get_first_field_by_type( 'rcp_password' ),
 			),
 			array(
 				'label'   => 'Membership Level',
 				'type'    => 'select',
 				'name'    => 'membership_level',
-				'tooltip' => 'This is the tooltip',
-				'choices' => array(
-					array(
-						'label' => 'First Choice',
-						'value' => '1'
-					),
-					array(
-						'label' => 'Second Choice',
-						'value' => '2'
-					),
-					array(
-						'label' => 'Third Choice',
-						'value' => '3'
-					)
-				)
-			),
+				'required'          => 'true',
+				'default_value' => $this->get_first_field_by_type( 'membership' ),
+			)
 		);
 	}
 
+	public function feed_list_columns() {
+		return array(
+			'gfrcp_feed_name' => __( 'Feed Name', 'gfrcp' ),
+		);
+	}
+
+	public function get_column_value_feedName( $feed ){
+		return '<b>' . rgars( $feed['meta'], 'enabled' ) . '</b>';
+	}
+
 	public function process_feed( $feed, $entry, $form ) {
-		$username         = $this->get_field_value( $form, $entry, rgar( $feed['meta'], 'RCPMembershipFields_username' ) );
-		$email            = $this->get_field_value( $form, $entry, rgar( $feed['meta'], 'RCPMembershipFields_useremail' ) );
-		$password         = $this->get_field_value( $form, $entry, rgar( $feed['meta'], 'RCPMembershipFields_rcp_password' ) );
+		$username            = $this->get_field_value( $form, $entry, rgar( $feed['meta'], 'RCPMembershipFields_username' ) );
+		$email               = $this->get_field_value( $form, $entry, rgar( $feed['meta'], 'RCPMembershipFields_useremail' ) );
+		$password            = $this->get_field_value( $form, $entry, rgar( $feed['meta'], 'RCPMembershipFields_rcp_password' ) );
 		$membership_level_id = $feed['meta']['RCPMembershipFields_membership_level'];
-		$membership_level = rgexplode( '|', $entry[$membership_level_id], 2 );
+		$membership_level    = rgexplode( '|', $entry[ $membership_level_id ], 2 );
 		global $gf_payment_gateway;
 
 		switch ( $gf_payment_gateway ) {
@@ -313,44 +160,45 @@ class GravityFeed extends GFFeedAddOn {
 		}
 
 		self::$membership_id = rcp_add_membership( array(
-			'inital_amount' => $entry['payment_amount'],
+			'inital_amount'    => $entry['payment_amount'],
 			'recurring_amount' => $entry['payment_amount'],
-			'auto_renew' => true,
-			'times_billed' => '1',
-			'customer_id' => $customer_id,
-			'object_id'   => $level_id,
-			'status'      => 'pending',
-			'gateway'     => $payment_gateway
+			'auto_renew'       => true,
+			'times_billed'     => '1',
+			'customer_id'      => $customer_id,
+			'object_id'        => $level_id,
+			'status'           => 'pending',
+			'gateway'          => $payment_gateway
 		) );
 
-		$membership = rcp_get_membership(self::$membership_id);
+		$membership = rcp_get_membership( self::$membership_id );
 
 		$payment_obj = new RCP_Payments();
 
 		$payment_data = [
-			'subscription'          => $membership_level[0],
-			'object_id'             => $membership->get_object_id(),
-			'object_type'           => $membership->get_object_type(),
-			'date'                  => date( 'Y-m-d H:i:s', current_time( 'timestamp' ) ),
-			'amount'                => $membership_level[1], // Total amount after fees/credits/discounts are added.
-			'user_id'               => $membership->get_user_id(),
-			'customer_id'           => $membership->get_customer_id(), // want RCP id
-			'membership_id'         => $membership->get_id(),
-			'payment_type'          => '',
-			'transaction_type'      => 'new',
-			'subscription_key'      => '',
-			'transaction_id'        => '',
-			'status'                => 'pending',
-			'subtotal'              => $membership_level[1], // Base price of the membership level.
-			'credits'               => 0.00, // Proration credits.
-			'fees'                  => 0.00, // Fees.
-			'discount_amount'       => 0.00, // Discount amount from discount code.
-			'discount_code'         => '',
-			'gateway'               => $payment_gateway
+			'subscription'     => $membership_level[0],
+			'object_id'        => $membership->get_object_id(),
+			'object_type'      => $membership->get_object_type(),
+			'date'             => date( 'Y-m-d H:i:s', current_time( 'timestamp' ) ),
+			'amount'           => $membership_level[1], // Total amount after fees/credits/discounts are added.
+			'user_id'          => $membership->get_user_id(),
+			'customer_id'      => $membership->get_customer_id(), // want RCP id
+			'membership_id'    => $membership->get_id(),
+			'payment_type'     => '',
+			'transaction_type' => 'new',
+			'subscription_key' => '',
+			'transaction_id'   => '',
+			'status'           => 'pending',
+			'subtotal'         => $membership_level[1], // Base price of the membership level.
+			'credits'          => 0.00, // Proration credits.
+			'fees'             => 0.00, // Fees.
+			'discount_amount'  => 0.00, // Discount amount from discount code.
+			'discount_code'    => '',
+			'gateway'          => $payment_gateway
 		];
 
 		$payment_obj->insert( $payment_data );
 
+		gform_update_meta( $entry['id'], 'is_gfrcp_enabled', $feed['meta']['enabled'] );
 		gform_update_meta( $entry['id'], 'rcp_membership_id', self::$membership_id );
 
 	}
