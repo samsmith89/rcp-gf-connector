@@ -27,6 +27,7 @@ class Fields {
 		add_action( 'gform_editor_js_set_default_values', [ $this, 'set_defaults' ] );
 		add_filter( 'gform_field_css_class', [ $this, 'custom_class' ], 10, 3 );
 		add_filter( 'gform_product_info', [ $this, 'add_membership_to_product' ], 10, 3 );
+		add_filter( 'gform_gravityformsstripe_feed_settings_fields', [ $this, 'update_feed_settings_fields' ], 10 );
 	}
 
 	public static function add_membership_to_product($product_info, $form, $lead) {
@@ -107,6 +108,9 @@ class Fields {
                     jQuery(".gfrcp-membership-field .field-choice-value").prop('disabled', true);
                     jQuery(".gfrcp-membership-field .field-choice-price").prop('disabled', true);
                 });
+                jQuery(".gfrcp-membership-field .choices_setting").show();
+                jQuery(".gfrcp-membership-field .gfield_settings_choices_container").addClass('choice_with_price');
+
 
             </script>
 			<?php
@@ -159,6 +163,11 @@ class Fields {
         field.choices = new Array(<?php echo $text; ?>);
         break;
 		<?php
+	}
+
+	public function update_feed_settings_fields($feed_settings_fields) {
+		$feed_settings_fields[4]['fields'][0]['field_map'][0]['field_type'][] = "useremail";
+	    return $feed_settings_fields;
 	}
 }
 
