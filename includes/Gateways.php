@@ -14,6 +14,7 @@ class Gateways {
 	 * @var
 	 */
 	protected static $_instance;
+	public static $transaction_id = '';
 
 	public static function get_instance() {
 		if ( ! self::$_instance instanceof Gateways ) {
@@ -24,13 +25,14 @@ class Gateways {
 	}
 
 	public function __construct() {
-		add_action( 'gform_post_subscription_started', [ $this, 'gfrcp_process_payment' ], 10, 2 );
+		add_action( 'gform_post_subscription_started', [ $this, 'gfrcp_process_subscription_payment' ], 10, 2 );
+		add_action( 'gform_post_payment_completed', [ $this, 'gfrcp_process_single_payment' ], 10, 2 );
 		add_action( 'gform_post_add_subscription_payment', [ $this, 'gfrcp_process_subscription' ], 10, 2 );
 	}
 	// gform_post_subscription_started: FOR SUBSCRIPTION PAYMENTS
 	// gform_post_payment_completed: FOR SINGLE PAYMENTS
 
-	public function gfrcp_process_payment( $entry, $subscription ) {
+	public function gfrcp_process_subscription_payment( $entry, $subscription ) {
 		if ( gform_get_meta( $entry['id'], 'is_gfrcp_enabled' ) == true ) {
 			$defaults = [
 				'status'                  => 'active',
@@ -38,13 +40,47 @@ class Gateways {
 				'gateway_subscription_id' => $subscription['subscription_id'],
 			];
 
-			rcp_update_membership( GravityFeed::$membership_id, $defaults );
+			rcp_update_membership( gform_get_meta( $entry['id'], 'gfrcp_membership_id' ), $defaults );
+		}
+	}
+
+	public function gfrcp_process_single_payment( $entry, $action ) {
+		if ( gform_get_meta( $entry['id'], 'is_gfrcp_enabled' ) == true ) {
+			$defaults = [
+				'status' => 'active',
+			];
+
+			$membership_id    = gform_get_meta( $entry['id'], 'gfrcp_membership_id' );
+			$membership       = rcp_get_membership( $membership_id );
+			$pending_payments = [];
+			$payments         = $membership->get_payments();
+
+			foreach ( $payments as $pmt ) {
+				if ( 'pending' === $pmt->status ) {
+					$pending_payments[] = $pmt;
+				}
+			}
+
+			$latest_pending_payment = end( $pending_payments );
+			$payment_obj            = new RCP_Payments(); // there are payment statuses in RCP. Use get_payments_membership from membership object
+
+			// This will be a payment update not creation. rcp_log();
+			//access the membership object then use method get_payments(). if there are payments and there is only 1 use it. Else grab last PHP "end($payments)"pending payment
+			$payment_data = [
+				'subscription_key' => '',
+				'transaction_id'   => $action['transaction_id'],
+				'status'           => 'complete',
+			];
+
+			$payment_obj->update( $latest_pending_payment->id, $payment_data );
+
+			rcp_update_membership( gform_get_meta( $entry['id'], 'gfrcp_membership_id' ), $defaults );
 		}
 	}
 
 	public function gfrcp_process_subscription( $entry, $action ) {
 		if ( gform_get_meta( $entry['id'], 'is_gfrcp_enabled' ) == true ) {
-			$membership_id = gform_get_meta( $entry['id'], 'rcp_membership_id' );
+			$membership_id = gform_get_meta( $entry['id'], 'gfrcp_membership_id' );
 			$membership    = rcp_get_membership( $membership_id );
 			$db_payment    = $this->gfrcp_get_transaction_id( $entry );
 
@@ -98,21 +134,23 @@ class Gateways {
 
 	public function gfrcp_get_transaction_id( $entry ) {
 		global $wpdb;
+		$entry_id       = '';
 
-		if ( $entry['id'] ) {
-			$transaction_id = $wpdb->get_var( $wpdb->prepare(
-				" SELECT transaction_id FROM {$wpdb->prefix}gf_addon_payment_transaction WHERE lead_id = %d ",
-				$entry['id']
-			) );
-		} else if ( ( ! isset( $transaction_id ) ) && ( $entry['entry_id'] ) ) {
-			$transaction_id = $wpdb->get_var( $wpdb->prepare(
-				" SELECT transaction_id FROM {$wpdb->prefix}gf_addon_payment_transaction WHERE lead_id = %d ",
-				$entry['entry_id']
-			) );
-		} else {
-			$transaction_id = 'nope';
+		if ( isset( $entry['id'] ) && ! empty( $entry['id'] ) ) {
+			$entry_id = $entry['id'];
 		}
 
-		return $transaction_id;
+		if ( isset( $entry['entry_id'] ) && ! empty( $entry['entry_id'] ) ) {
+			$entry_id = $entry['entry_id'];
+		}
+
+		if ( ! empty( $entry_id ) ) {
+			self::$transaction_id = $wpdb->get_var( $wpdb->prepare(
+				" SELECT transaction_id FROM {$wpdb->prefix}gf_addon_payment_transaction WHERE lead_id = %d ",
+				$entry_id
+			) );
+		}
+
+		return self::$transaction_id;
 	}
 }

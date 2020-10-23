@@ -4,6 +4,8 @@ namespace GF_RCP;
 
 use GFFeedAddOn;
 use GFForms;
+use GFCommon;
+use RGCurrency;
 use RCP_Levels;
 use RCP_Payments;
 
@@ -18,9 +20,9 @@ class GravityFeed extends GFFeedAddOn {
 	protected $_full_path = __FILE__;
 	protected $_title = 'Gravity Forms - Restrict Content Pro Addon';
 	protected $_short_title = 'GF RCP Connector';
+	public $_async_feed_processing = true;
 
 	private static $_instance = null;
-	public static $membership_id = '';
 
 	public static function get_instance() {
 		if ( self::$_instance == null ) {
@@ -101,11 +103,18 @@ class GravityFeed extends GFFeedAddOn {
 				'default_value' => $this->get_first_field_by_type( 'rcp_password' ),
 			),
 			array(
-				'label'   => 'Membership Level',
-				'type'    => 'select',
-				'name'    => 'membership_level',
-				'required'          => 'true',
+				'label'         => 'Membership Level',
+				'type'          => 'select',
+				'name'          => 'membership',
+				'required'      => 'true',
 				'default_value' => $this->get_first_field_by_type( 'membership' ),
+			),
+			array(
+				'label'         => 'Inital Fee',
+				'type'          => 'select',
+				'name'          => 'rcp_inital_fee',
+//				'required'      => 'true',
+				'default_value' => $this->get_first_field_by_type( 'product_price' ),
 			)
 		);
 	}
@@ -116,7 +125,7 @@ class GravityFeed extends GFFeedAddOn {
 		);
 	}
 
-	public function get_column_value_feedName( $feed ){
+	public function get_column_value_feedName( $feed ) {
 		return '<b>' . rgars( $feed['meta'], 'enabled' ) . '</b>';
 	}
 
@@ -124,7 +133,8 @@ class GravityFeed extends GFFeedAddOn {
 		$username            = $this->get_field_value( $form, $entry, rgar( $feed['meta'], 'RCPMembershipFields_username' ) );
 		$email               = $this->get_field_value( $form, $entry, rgar( $feed['meta'], 'RCPMembershipFields_useremail' ) );
 		$password            = $this->get_field_value( $form, $entry, rgar( $feed['meta'], 'RCPMembershipFields_rcp_password' ) );
-		$membership_level_id = $feed['meta']['RCPMembershipFields_membership_level'];
+		$fee                 = $this->get_field_value( $form, $entry, rgar( $feed['meta'], 'RCPMembershipFields_rcp_inital_fee' ) );
+		$membership_level_id = $feed['meta']['RCPMembershipFields_membership'];
 		$membership_level    = rgexplode( '|', $entry[ $membership_level_id ], 2 );
 		global $gf_payment_gateway;
 
@@ -159,18 +169,21 @@ class GravityFeed extends GFFeedAddOn {
 			}
 		}
 
-		self::$membership_id = rcp_add_membership( array(
+		$membership_defaults = [
 			'inital_amount'    => $entry['payment_amount'],
-			'recurring_amount' => $entry['payment_amount'],
+			'recurring_amount' => $membership_level[1],
 			'auto_renew'       => true,
 			'times_billed'     => '1',
 			'customer_id'      => $customer_id,
 			'object_id'        => $level_id,
 			'status'           => 'pending',
-			'gateway'          => $payment_gateway
-		) );
+			'gateway'          => $payment_gateway,
+			'activated_date'   => current_time( 'mysql' )
+		];
 
-		$membership = rcp_get_membership( self::$membership_id );
+		$membership_id = rcp_add_membership( $membership_defaults );
+
+		$membership = rcp_get_membership( $membership_id );
 
 		$payment_obj = new RCP_Payments();
 
@@ -196,10 +209,32 @@ class GravityFeed extends GFFeedAddOn {
 			'gateway'          => $payment_gateway
 		];
 
+		if ( isset( $fee ) && ! empty( $fee ) ) {
+
+			$code = empty( $currency ) ? GFCommon::get_currency() : $currency;
+			if ( empty( $code ) ) {
+				$code = 'USD';
+			}
+
+			$currency = RGCurrency::get_currency( $code );
+
+			$gf_pay_func = new RGCurrency($currency);
+
+			$clean_fee = $gf_pay_func->to_number($fee);
+			$payment_data['fees'] = $clean_fee;
+			$payment_data['amount'] = $membership_level[1] + $clean_fee;
+			gform_update_meta( $entry['id'], 'gfrcp_initial_fee', $fee );
+			gform_update_meta( $entry['id'], 'gfrcp_recurring_amount', $membership_level[1] );
+		}
+
 		$payment_obj->insert( $payment_data );
 
 		gform_update_meta( $entry['id'], 'is_gfrcp_enabled', $feed['meta']['enabled'] );
-		gform_update_meta( $entry['id'], 'rcp_membership_id', self::$membership_id );
+		gform_update_meta( $entry['id'], 'gfrcp_membership_id', $membership_id );
+
+	}
+
+	public function recurring_amount_choices() {
 
 	}
 

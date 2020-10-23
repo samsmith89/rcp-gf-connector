@@ -28,7 +28,7 @@ class Paypal {
 
 	public function gfrcp_paypal_ipn( $entry, $feed ) {
 
-		$membership_id = gform_get_meta( $feed['id'], 'rcp_membership_id' );
+		$membership_id = gform_get_meta( $feed['id'], 'gfrcp_membership_id' );
 
 		$membership = rcp_get_membership($membership_id);
 
