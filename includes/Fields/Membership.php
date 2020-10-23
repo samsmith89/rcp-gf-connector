@@ -32,22 +32,21 @@ class Membership extends GF_Field_Product
 		      . " result = false;
 				}
             }
+            if (type === 'product') {
+                if ((GetFieldsByType(['membership']).length > 0 ) && (GetFieldsByType(['product']).length > 0)) {" .
+		      sprintf( "alert(%s);", json_encode( esc_html__( 'Only one Product field can be added to the form to set up an initial fee', 'gfrcp' ) ) )
+		      . " result = false;
+				}
+            }
+            if (type === 'membership') {
+                if (GetFieldsByType(['product']).length > 1 ) {" .
+		      sprintf( "alert(%s);", json_encode( esc_html__( 'There can only be one addition Product field for the purpose of setting up an initial fee', 'gfrcp' ) ) )
+		      . " result = false;
+				}
+            }
             
             return result;
         });";
-
-//		if (type === 'membership') {
-//			if (GetFieldsByType(['product']).length > 0) {" .
-//		      sprintf( "alert(%s);", json_encode( esc_html__( 'There cannot be both product and membership fields within the same form.', 'gfrcp' ) ) )
-//		      . " result = false;
-//				}
-//		}
-//		if (type === 'product') {
-//			if (GetFieldsByType(['membership']).length > 0) {" .
-//		      sprintf( "alert(%s);", json_encode( esc_html__( 'There cannot be both product and membership fields within the same form.', 'gfrcp' ) ) )
-//		      . " result = false;
-//				}
-//		}
 
 		return $js;
 	}

@@ -223,8 +223,6 @@ class GravityFeed extends GFFeedAddOn {
 			$clean_fee = $gf_pay_func->to_number($fee);
 			$payment_data['fees'] = $clean_fee;
 			$payment_data['amount'] = $membership_level[1] + $clean_fee;
-			gform_update_meta( $entry['id'], 'gfrcp_initial_fee', $fee );
-			gform_update_meta( $entry['id'], 'gfrcp_recurring_amount', $membership_level[1] );
 		}
 
 		$payment_obj->insert( $payment_data );
