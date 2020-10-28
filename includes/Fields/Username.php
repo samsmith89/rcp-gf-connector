@@ -22,6 +22,7 @@ class Username extends GF_Field_Text {
 	}
 
 	public $type = 'username';
+	public $is_gfrcp = true;
 
 	/**
 	 * Adds the field button to the specified group.

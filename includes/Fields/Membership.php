@@ -23,17 +23,42 @@ class Membership extends GF_Field_Product
     }
 
     public $type = 'membership';
+	public $is_gfrcp = true;
 
-    /**
-     * Adds the field button to the specified group.
-     *
-     * @param array $field_groups
-     *
-     * @return array
-     */
+	public function get_form_editor_inline_script_on_page_render() {
+		$js = "gform.addFilter('gform_form_editor_can_field_be_added', function(result, type) {
+            if (type === 'membership') {
+                if (GetFieldsByType(['membership']).length > 0) {" .
+		      sprintf( "alert(%s);", json_encode( esc_html__( 'Only one Membership field can be added to the form', 'gfrcp' ) ) )
+		      . " result = false;
+				}
+            }
+            if (type === 'product') {
+                if ((GetFieldsByType(['membership']).length > 0 ) && (GetFieldsByType(['product']).length > 0)) {" .
+		      sprintf( "alert(%s);", json_encode( esc_html__( 'Only one Product field can be added to the form to set up an initial fee', 'gfrcp' ) ) )
+		      . " result = false;
+				}
+            }
+            if (type === 'membership') {
+                if (GetFieldsByType(['product']).length > 1 ) {" .
+		      sprintf( "alert(%s);", json_encode( esc_html__( 'There can only be one addition Product field for the purpose of setting up an initial fee', 'gfrcp' ) ) )
+		      . " result = false;
+				}
+            }
+            
+            return result;
+        });";
 
+		return $js;
+	}
 
-
+	/**
+	 * Adds the field button to the specified group.
+	 *
+	 * @param array $field_groups
+	 *
+	 * @return array
+	 */
     public function add_button($field_groups)
     {
 

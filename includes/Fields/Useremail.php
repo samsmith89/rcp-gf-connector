@@ -24,6 +24,7 @@ class Useremail extends GF_Field_Email {
 	}
 
 	public $type = 'useremail';
+	public $is_gfrcp = true;
 
 	/**
 	 * Adds the field button to the specified group.

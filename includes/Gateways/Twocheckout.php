@@ -28,7 +28,7 @@ class Twocheckout {
 
 	public static function gfrcp_stripe_webhook($action, $event) {
 
-		$membership_id = gform_get_meta( $action['entry_id'], 'rcp_membership_id' );
+		$membership_id = gform_get_meta( $action['entry_id'], 'gfrcp_membership_id' );
 
 		$membership = rcp_get_membership($membership_id);
 
