@@ -22,6 +22,7 @@ class Password extends GF_Field_Password {
 	}
 
 	public $type = 'rcp_password';
+	public $is_gfrcp = true;
 
 	/**
 	 * Adds the field button to the specified group.

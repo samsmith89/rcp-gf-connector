@@ -3,7 +3,9 @@
 namespace GF_RCP;
 
 use GFFeedAddOn;
+use GFAPI;
 use GFForms;
+use RGFormsModel;
 use GFCommon;
 use RGCurrency;
 use RCP_Levels;
@@ -20,7 +22,6 @@ class GravityFeed extends GFFeedAddOn {
 	protected $_full_path = __FILE__;
 	protected $_title = 'Gravity Forms - Restrict Content Pro Addon';
 	protected $_short_title = 'GF RCP Connector';
-	public $_async_feed_processing = true;
 
 	private static $_instance = null;
 
@@ -133,9 +134,14 @@ class GravityFeed extends GFFeedAddOn {
 		$username            = $this->get_field_value( $form, $entry, rgar( $feed['meta'], 'RCPMembershipFields_username' ) );
 		$email               = $this->get_field_value( $form, $entry, rgar( $feed['meta'], 'RCPMembershipFields_useremail' ) );
 		$password            = $this->get_field_value( $form, $entry, rgar( $feed['meta'], 'RCPMembershipFields_rcp_password' ) );
-		$fee                 = $this->get_field_value( $form, $entry, rgar( $feed['meta'], 'RCPMembershipFields_rcp_inital_fee' ) );
+//		$fee                 = $this->get_field_value( $form, $entry, rgar( $feed['meta'], 'RCPMembershipFields_rcp_inital_fee' ) );
 		$membership_level_id = $feed['meta']['RCPMembershipFields_membership'];
 		$membership_level    = rgexplode( '|', $entry[ $membership_level_id ], 2 );
+
+		$fee_field  = GFAPI::get_fields_by_type( $form, array( 'product' ) );
+		$fee = $fee_field[0]->basePrice;
+
+
 		global $gf_payment_gateway;
 
 		switch ( $gf_payment_gateway ) {
@@ -225,14 +231,29 @@ class GravityFeed extends GFFeedAddOn {
 			$payment_data['amount'] = $membership_level[1] + $clean_fee;
 		}
 
+		if ( ! empty(Gateways::$gfrcp_fee) ) {
+			$customer        = rcp_get_customer( $customer_id );
+			$has_trial       = true;
+			$set_trial       = ( $has_trial && ! $customer->has_trialed() );
+			$expiration_date = Gateways::$gfrcp_expiration_date;
+
+			// Auto calculate expiration.
+			if ( empty( $data['expiration_date'] ) && ! empty( $expiration_date ) ) {
+				$data['expiration_date'] = $expiration_date;
+			}
+
+			// Auto calculate trial end date.
+			if ( $set_trial && empty( $data['trial_end_date'] ) && ! empty( $expiration_date ) ) {
+				$data['trial_end_date'] = $expiration_date;
+			}
+
+			rcp_update_membership( $membership_id, $data );
+		}
+
 		$payment_obj->insert( $payment_data );
 
 		gform_update_meta( $entry['id'], 'is_gfrcp_enabled', $feed['meta']['enabled'] );
 		gform_update_meta( $entry['id'], 'gfrcp_membership_id', $membership_id );
-
-	}
-
-	public function recurring_amount_choices() {
 
 	}
 

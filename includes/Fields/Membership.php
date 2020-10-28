@@ -23,6 +23,7 @@ class Membership extends GF_Field_Product
     }
 
     public $type = 'membership';
+	public $is_gfrcp = true;
 
 	public function get_form_editor_inline_script_on_page_render() {
 		$js = "gform.addFilter('gform_form_editor_can_field_be_added', function(result, type) {

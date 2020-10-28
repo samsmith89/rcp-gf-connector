@@ -2,7 +2,6 @@
 
 namespace GF_RCP;
 
-use GF_RCP\GravityFeed as GravityFeed;
 use RCP_Payments;
 
 if ( ! class_exists( 'GFForms' ) ) {
@@ -15,6 +14,8 @@ class Gateways {
 	 */
 	protected static $_instance;
 	public static $transaction_id = '';
+	public static $gfrcp_fee = '';
+	public static $gfrcp_expiration_date = '';
 
 	public static function get_instance() {
 		if ( ! self::$_instance instanceof Gateways ) {
@@ -28,6 +29,7 @@ class Gateways {
 		add_action( 'gform_post_subscription_started', [ $this, 'gfrcp_process_subscription_payment' ], 10, 2 );
 		add_action( 'gform_post_payment_completed', [ $this, 'gfrcp_process_single_payment' ], 10, 2 );
 		add_action( 'gform_post_add_subscription_payment', [ $this, 'gfrcp_process_subscription' ], 10, 2 );
+		add_filter( 'gform_submission_data_pre_process_payment', [ $this, 'gfrcp_process_trial' ], 10, 4 );
 	}
 	// gform_post_subscription_started: FOR SUBSCRIPTION PAYMENTS
 	// gform_post_payment_completed: FOR SINGLE PAYMENTS
@@ -46,9 +48,6 @@ class Gateways {
 
 	public function gfrcp_process_single_payment( $entry, $action ) {
 		if ( gform_get_meta( $entry['id'], 'is_gfrcp_enabled' ) == true ) {
-			$defaults = [
-				'status' => 'active',
-			];
 
 			$membership_id    = gform_get_meta( $entry['id'], 'gfrcp_membership_id' );
 			$membership       = rcp_get_membership( $membership_id );
@@ -73,6 +72,10 @@ class Gateways {
 			];
 
 			$payment_obj->update( $latest_pending_payment->id, $payment_data );
+
+			$defaults = [
+				'status' => 'active',
+			];
 
 			rcp_update_membership( gform_get_meta( $entry['id'], 'gfrcp_membership_id' ), $defaults );
 		}
@@ -129,12 +132,27 @@ class Gateways {
 
 				$payment_obj->update( $latest_pending_payment->id, $payment_data );
 			}
+
+//			$defaults = [
+//				'status' => 'active',
+//			];
+//
+//			rcp_update_membership( gform_get_meta( $entry['id'], 'gfrcp_membership_id' ), $defaults );
 		}
+	}
+
+	public function gfrcp_process_trial( $submission_data, $feed, $form, $entry ) {
+		if ( ( $this->check_if_gfrcp($form) ) && ( $feed['meta']['trial_enabled'] == true ) ) {
+			self::$gfrcp_fee = $feed['meta']['trialPeriod'];;
+			self::$gfrcp_expiration_date = $this->gfrcp_calculate_trial( $feed );
+
+		}
+		return $submission_data;
 	}
 
 	public function gfrcp_get_transaction_id( $entry ) {
 		global $wpdb;
-		$entry_id       = '';
+		$entry_id = '';
 
 		if ( isset( $entry['id'] ) && ! empty( $entry['id'] ) ) {
 			$entry_id = $entry['id'];
@@ -152,5 +170,55 @@ class Gateways {
 		}
 
 		return self::$transaction_id;
+	}
+
+	public function gfrcp_calculate_trial( $feed ) {
+
+		$current_time = current_time( 'timestamp' );
+
+
+		$expiration_unit   = "day";
+		$expiration_length = $feed['meta']['trialPeriod'];
+
+
+		$expiration_timestamp = strtotime( '+' . $expiration_length . ' ' . $expiration_unit . ' 23:59:59', $current_time );
+		$expiration_date      = date( 'Y-m-d H:i:s', $expiration_timestamp );
+
+		$extension_days = array( '29', '30', '31' );
+
+		if ( in_array( date( 'j', $expiration_timestamp ), $extension_days ) && 'month' === $expiration_unit ) {
+			/*
+			 * Here we extend the expiration date by 1-3 days in order to account for "walking" payment dates in PayPal.
+			 *
+			 * See https://github.com/pippinsplugins/restrict-content-pro/issues/239
+			 */
+
+			$month = date( 'n', $expiration_timestamp );
+
+			if ( $month < 12 ) {
+				$month += 1;
+				$year  = date( 'Y', $expiration_timestamp );
+			} else {
+				$month = 1;
+				$year  = date( 'Y', $expiration_timestamp ) + 1;
+			}
+
+			$timestamp       = mktime( 0, 0, 0, $month, 1, $year );
+			$expiration_date = date( 'Y-m-d 23:59:59', $timestamp );
+		}
+
+		return $expiration_date;
+	}
+
+	public function check_if_gfrcp( $form ) {
+		if ( empty( $form ) || ! isset( $form['fields'] ) ) {
+			return false;
+		}
+		foreach ( $form['fields'] as $field ) {
+			if ( isset( $field['is_gfrcp'] ) ) {
+				return true;
+			}
+		}
+		return false;
 	}
 }
