@@ -14,7 +14,7 @@ class Gateways {
 	 */
 	protected static $_instance;
 	public static $transaction_id = '';
-	public static $gfrcp_fee = '';
+	public static $gfrcp_trial = '';
 	public static $gfrcp_expiration_date = '';
 
 	public static function get_instance() {
@@ -143,7 +143,7 @@ class Gateways {
 
 	public function gfrcp_process_trial( $submission_data, $feed, $form, $entry ) {
 		if ( ( $this->check_if_gfrcp($form) ) && ( $feed['meta']['trial_enabled'] == true ) ) {
-			self::$gfrcp_fee = $feed['meta']['trialPeriod'];;
+			self::$gfrcp_trial = $feed['meta']['trialPeriod'];;
 			self::$gfrcp_expiration_date = $this->gfrcp_calculate_trial( $feed );
 
 		}

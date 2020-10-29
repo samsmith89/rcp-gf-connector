@@ -5,7 +5,6 @@ namespace GF_RCP;
 use GFFeedAddOn;
 use GFAPI;
 use GFForms;
-use RGFormsModel;
 use GFCommon;
 use RGCurrency;
 use RCP_Levels;
@@ -15,7 +14,6 @@ GFForms::include_feed_addon_framework();
 
 class GravityFeed extends GFFeedAddOn {
 
-//    protected $_version = GFRCP_ADDON_VERSION;
 	protected $_min_gravityforms_version = '1.9';
 	protected $_slug = 'gfrcp';
 	protected $_path = 'gfrcp/gfrcp.php';
@@ -33,10 +31,7 @@ class GravityFeed extends GFFeedAddOn {
 		return self::$_instance;
 	}
 
-//	public function init() {
-//		parent::init();
-//	}
-
+	/* Feed settings fields */
 	public function feed_settings_fields() {
 		return array(
 			array(
@@ -80,6 +75,7 @@ class GravityFeed extends GFFeedAddOn {
 		);
 	}
 
+	/* Mapped fields within feed settings */
 	public function standard_fields_for_feed_mapping() {
 		return array(
 			array(
@@ -110,38 +106,29 @@ class GravityFeed extends GFFeedAddOn {
 				'required'      => 'true',
 				'default_value' => $this->get_first_field_by_type( 'membership' ),
 			),
-			array(
-				'label'         => 'Inital Fee',
-				'type'          => 'select',
-				'name'          => 'rcp_inital_fee',
-//				'required'      => 'true',
-				'default_value' => $this->get_first_field_by_type( 'product_price' ),
-			)
 		);
 	}
 
+	/* Display information in bulk feeds view */
 	public function feed_list_columns() {
 		return array(
 			'gfrcp_feed_name' => __( 'Feed Name', 'gfrcp' ),
 		);
 	}
 
-	public function get_column_value_feedName( $feed ) {
-		return '<b>' . rgars( $feed['meta'], 'enabled' ) . '</b>';
-	}
-
 	public function process_feed( $feed, $entry, $form ) {
+		/* Setting variables for use in feed */
 		$username            = $this->get_field_value( $form, $entry, rgar( $feed['meta'], 'RCPMembershipFields_username' ) );
 		$email               = $this->get_field_value( $form, $entry, rgar( $feed['meta'], 'RCPMembershipFields_useremail' ) );
 		$password            = $this->get_field_value( $form, $entry, rgar( $feed['meta'], 'RCPMembershipFields_rcp_password' ) );
-//		$fee                 = $this->get_field_value( $form, $entry, rgar( $feed['meta'], 'RCPMembershipFields_rcp_inital_fee' ) );
 		$membership_level_id = $feed['meta']['RCPMembershipFields_membership'];
 		$membership_level    = rgexplode( '|', $entry[ $membership_level_id ], 2 );
 
-		$fee_field  = GFAPI::get_fields_by_type( $form, array( 'product' ) );
-		$fee = $fee_field[0]->basePrice;
+		/* Setting initial fee variable if set through payment gateway */
+		$fee_field = GFAPI::get_fields_by_type( $form, array( 'product' ) );
+		$fee       = $fee_field[0]->basePrice;
 
-
+		/* Router to determine which payment gateway is being used */
 		global $gf_payment_gateway;
 
 		switch ( $gf_payment_gateway ) {
@@ -161,20 +148,25 @@ class GravityFeed extends GFFeedAddOn {
 				$payment_gateway = '';
 		};
 
+		/* Create user */
 		$user_id = wp_create_user( $username, $password, $email );
 
+		/* Create RCP Customer */
 		$customer_id = rcp_add_customer( [ 'user_id' => $user_id ] );
 
+		/* Determine membership level */
 		$level_id  = '';
 		$levels_db = new RCP_Levels();
 		$levels    = $levels_db->get_levels( array( 'status' => 'active' ) );
 
+		/* Loop through fields to determine the membership level */
 		foreach ( $levels as $level ) {
 			if ( $level->name === $membership_level[0] ) {
 				$level_id = $level->id;
 			}
 		}
 
+		/* Defaults for all memberships */
 		$membership_defaults = [
 			'inital_amount'    => $entry['payment_amount'],
 			'recurring_amount' => $membership_level[1],
@@ -187,10 +179,31 @@ class GravityFeed extends GFFeedAddOn {
 			'activated_date'   => current_time( 'mysql' )
 		];
 
+		/* If membership level is trialing mark that here */
+		if ( ! empty( Gateways::$gfrcp_trial ) ) {
+			$customer        = rcp_get_customer( $customer_id );
+			$has_trial       = true;
+			$set_trial       = ( $has_trial && ! $customer->has_trialed() );
+			$expiration_date = Gateways::$gfrcp_expiration_date;
+
+			/* Auto calculate expiration */
+			if ( empty( $membership_defaults['expiration_date'] ) && ! empty( $expiration_date ) ) {
+				$membership_defaults['expiration_date'] = $expiration_date;
+			}
+
+			/*Auto calculate trial end date. */
+			if ( $set_trial && empty( $membership_defaults['trial_end_date'] ) && ! empty( $expiration_date ) ) {
+				$membership_defaults['trial_end_date'] = $expiration_date;
+			}
+		}
+
+		/* Create the membership */
 		$membership_id = rcp_add_membership( $membership_defaults );
 
+		/* Get membership object */
 		$membership = rcp_get_membership( $membership_id );
 
+		/* Get payment object */
 		$payment_obj = new RCP_Payments();
 
 		$payment_data = [
@@ -198,25 +211,26 @@ class GravityFeed extends GFFeedAddOn {
 			'object_id'        => $membership->get_object_id(),
 			'object_type'      => $membership->get_object_type(),
 			'date'             => date( 'Y-m-d H:i:s', current_time( 'timestamp' ) ),
-			'amount'           => $membership_level[1], // Total amount after fees/credits/discounts are added.
+			'amount'           => $membership_level[1],
 			'user_id'          => $membership->get_user_id(),
-			'customer_id'      => $membership->get_customer_id(), // want RCP id
+			'customer_id'      => $membership->get_customer_id(),
 			'membership_id'    => $membership->get_id(),
 			'payment_type'     => '',
 			'transaction_type' => 'new',
 			'subscription_key' => '',
 			'transaction_id'   => '',
 			'status'           => 'pending',
-			'subtotal'         => $membership_level[1], // Base price of the membership level.
-			'credits'          => 0.00, // Proration credits.
-			'fees'             => 0.00, // Fees.
-			'discount_amount'  => 0.00, // Discount amount from discount code.
+			'subtotal'         => $membership_level[1],
+			'credits'          => 0.00,
+			'fees'             => 0.00,
+			'discount_amount'  => 0.00,
 			'discount_code'    => '',
 			'gateway'          => $payment_gateway
 		];
 
+		/* Add meta to payment If there's a fee set through the payment gateway */
 		if ( isset( $fee ) && ! empty( $fee ) ) {
-
+			/* Get currency from Gravity Forms */
 			$code = empty( $currency ) ? GFCommon::get_currency() : $currency;
 			if ( empty( $code ) ) {
 				$code = 'USD';
@@ -224,37 +238,18 @@ class GravityFeed extends GFFeedAddOn {
 
 			$currency = RGCurrency::get_currency( $code );
 
-			$gf_pay_func = new RGCurrency($currency);
+			$gf_pay_func = new RGCurrency( $currency );
 
-			$clean_fee = $gf_pay_func->to_number($fee);
-			$payment_data['fees'] = $clean_fee;
+			$clean_fee              = $gf_pay_func->to_number( $fee );
+			$payment_data['fees']   = $clean_fee;
 			$payment_data['amount'] = $membership_level[1] + $clean_fee;
 		}
 
-		if ( ! empty(Gateways::$gfrcp_fee) ) {
-			$customer        = rcp_get_customer( $customer_id );
-			$has_trial       = true;
-			$set_trial       = ( $has_trial && ! $customer->has_trialed() );
-			$expiration_date = Gateways::$gfrcp_expiration_date;
-
-			// Auto calculate expiration.
-			if ( empty( $data['expiration_date'] ) && ! empty( $expiration_date ) ) {
-				$data['expiration_date'] = $expiration_date;
-			}
-
-			// Auto calculate trial end date.
-			if ( $set_trial && empty( $data['trial_end_date'] ) && ! empty( $expiration_date ) ) {
-				$data['trial_end_date'] = $expiration_date;
-			}
-
-			rcp_update_membership( $membership_id, $data );
-		}
-
+		/* Create payment */
 		$payment_obj->insert( $payment_data );
 
+		/* Add meta to entry for later functionality */
 		gform_update_meta( $entry['id'], 'is_gfrcp_enabled', $feed['meta']['enabled'] );
 		gform_update_meta( $entry['id'], 'gfrcp_membership_id', $membership_id );
-
 	}
-
 }
