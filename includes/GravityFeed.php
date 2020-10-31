@@ -124,10 +124,6 @@ class GravityFeed extends GFFeedAddOn {
 		$membership_level_id = $feed['meta']['RCPMembershipFields_membership'];
 		$membership_level    = rgexplode( '|', $entry[ $membership_level_id ], 2 );
 
-		/* Setting initial fee variable if set through payment gateway */
-		$fee_field = GFAPI::get_fields_by_type( $form, array( 'product' ) );
-		$fee       = $fee_field[0]->basePrice;
-
 		/* Router to determine which payment gateway is being used */
 		global $gf_payment_gateway;
 
@@ -180,7 +176,7 @@ class GravityFeed extends GFFeedAddOn {
 		];
 
 		/* If membership level is trialing mark that here */
-		if ( ! empty( Gateways::$gfrcp_trial ) ) {
+		if ( ( Gateways::$gfrcp_trial_enabled == true ) ) {
 			$customer        = rcp_get_customer( $customer_id );
 			$has_trial       = true;
 			$set_trial       = ( $has_trial && ! $customer->has_trialed() );
@@ -229,7 +225,7 @@ class GravityFeed extends GFFeedAddOn {
 		];
 
 		/* Add meta to payment If there's a fee set through the payment gateway */
-		if ( isset( $fee ) && ! empty( $fee ) ) {
+		if ( Gateways::$gfrcp_fee_enabled == true ) {
 			/* Get currency from Gravity Forms */
 			$code = empty( $currency ) ? GFCommon::get_currency() : $currency;
 			if ( empty( $code ) ) {
@@ -240,9 +236,9 @@ class GravityFeed extends GFFeedAddOn {
 
 			$gf_pay_func = new RGCurrency( $currency );
 
-			$clean_fee              = $gf_pay_func->to_number( $fee );
-			$payment_data['fees']   = $clean_fee;
-			$payment_data['amount'] = $membership_level[1] + $clean_fee;
+			$clean_fee              = $gf_pay_func->to_number( Gateways::$gfrcp_fee_amount );
+			$payment_data['fees']   = $clean_fee ;
+			$payment_data['amount'] = $clean_fee + $membership_level[1];
 		}
 
 		/* Create payment */
