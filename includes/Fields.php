@@ -108,7 +108,7 @@ class Fields {
 					<?php
 
 					foreach ( self::gfrcp_get_rcp_levels() as $level ) {
-						echo '<option value="' . $level->name . '" data-price="' . rcp_currency_filter( $level->price ) . '">' . $level->name . '</option>';
+						echo '<option value="' . $level->name . '" data-price="' . rcp_currency_filter( $level->price ) . '">' . $level->name . ' - ' . rcp_currency_filter( $level->price ) . '</option>';
 					}
 
 					?>
@@ -152,7 +152,7 @@ class Fields {
 	public function set_defaults() {
 		$choices = [];
 		foreach ( self::gfrcp_get_rcp_levels() as $level ) {
-			$choice    = 'new Choice("' . $level->name . '", ' . json_encode( $level->name ) . ', "' . rcp_currency_filter( $level->price ) . '")';
+			$choice    = 'new Choice("' . $level->name . ' - ' . rcp_currency_filter( $level->price ) . '", ' . json_encode( $level->name ) . ', "' . rcp_currency_filter( $level->price ) . '")';
 			$choices[] = $choice;
 		}
 		$text = implode( ", ", $choices );
