@@ -4,13 +4,24 @@ namespace GF_RCP;
 
 use RCP_Levels;
 
+/**
+ * Handles functionality around Levels in RCP.
+ *
+ * @since 1.0.0
+ *
+ */
+
 class Levels {
-
+	/**
+	 * @var
+	 */
 	protected static $_instance;
-	public $choices;
 
-	public static $levels;
-
+	/**
+	 * @since 1.0.0
+	 *
+	 * @return self
+	 */
 	public static function get_instance() {
 		if ( ! self::$_instance instanceof Levels ) {
 			self::$_instance = new self();
@@ -19,12 +30,28 @@ class Levels {
 		return self::$_instance;
 	}
 
+	/**
+	 * Adds the actions related to RCP levels.
+	 *
+	 * @since 1.0.0
+	 */
+
 	protected function __construct() {
 		add_action( 'rcp_edit_subscription_form', [ $this, 'edit_RCP_level_settings' ], 10 );
 		add_action( 'rcp_add_subscription_form', [ $this, 'edit_add_RCP_level_settings' ], 10 );
 		add_action( 'rcp_action_edit-subscription', [ $this, 'process_RCP_level_settings_change' ], 10 );
 		add_action( 'rcp_action_add-level', [ $this, 'process_RCP_level_settings_add' ], 10 );
 	}
+
+	/**
+	 * Summary.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @see rcp_is_rcp_admin_page()
+	 *
+	 * @param object $level
+	 */
 
 	public function edit_RCP_level_settings($level) {
 		$levels = new RCP_Levels();
@@ -46,8 +73,15 @@ class Levels {
 		}
 	}
 
+	/**
+	 * Summary.
+     *
+	 * @since 1.0.0
+	 *
+	 * @param object $level.
+	 */
+
 	public function edit_add_RCP_level_settings($level) {
-		$levels = new RCP_Levels();
 		?><tr class="form-field">
 				<th scope="row" valign="top">
 					<label for="gfrcp_is_connected">Gravity Forms Connection</label>
@@ -59,6 +93,15 @@ class Levels {
 			</tr>
 		<?php
 	}
+
+	/**
+	 * Functionality when a membership level is being edited.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @see RCP_Levels::update();
+	 * @see RCP_Levels::update_meta();
+	 */
 
 	public function process_RCP_level_settings_change() {
 		if ( ! wp_verify_nonce( $_POST['rcp_edit_level_nonce'], 'rcp_edit_level_nonce' ) ) {
@@ -91,6 +134,15 @@ class Levels {
 			}
 		}
 	}
+
+	/**
+	 * Functionality when a membership level is being added.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @see RCP_Levels::insert();
+	 * @see RCP_Levels::update_meta();
+	 */
 
 	public function process_RCP_level_settings_add() {
 		if ( ! wp_verify_nonce( $_POST['rcp_add_level_nonce'], 'rcp_add_level_nonce' ) ) {
