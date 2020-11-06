@@ -12,9 +12,24 @@
 
 class GF_RCP
 {
+	/**
+	 * @var
+	 */
     protected static $_instance;
 
+	/**
+	 * @var string
+	 */
+
     protected static $_version = '1.0.0';
+
+	/**
+	 * Summary.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return self
+	 */
 
     public static function get_instance() {
         if ( ! self::$_instance instanceof self ) {
@@ -24,9 +39,21 @@ class GF_RCP
         return self::$_instance;
     }
 
+	/**
+	 * Add Hooks and Actions.
+	 *
+	 * @since 1.0.0
+	 */
+
     protected function __construct() {
         add_action( 'plugins_loaded', array( $this, 'maybe_setup' ), - 9999 );
     }
+
+	/**
+	 * Includes.
+	 *
+	 * @since 1.0.0
+	 */
 
     protected function includes() {
         if (!method_exists('GFForms', 'include_addon_framework')) {
@@ -48,8 +75,16 @@ class GF_RCP
 //        GF_RCP\Gateways\Paypal_Pro::get_instance();
 //        GF_RCP\Gateways\Twocheckout::get_instance();
         GFAddOn::register('GF_RCP\GravityFeed');
-
     }
+
+	/**
+	 * Setup the Plugin
+	 *
+	 * @since 1.0.0
+	 *
+	 * @see GF_RCP::includes()
+	 * @see GF_RCP::actions()
+	 */
 
     public function maybe_setup() {
         if ( ! $this->check_required_plugins() ) {
@@ -60,6 +95,14 @@ class GF_RCP
         $this->actions();
     }
 
+	/**
+	 * Setup action hooks
+	 *
+	 * @since 1.0.0
+	 *
+	 * @see GF_RCP::styles()
+	 */
+
     protected function actions() {
 //        add_action( 'init', array( $this, 'load_textdomain' ) );
 //        add_action( 'wp_enqueue_scripts', array( $this, 'scripts' ) );
@@ -68,50 +111,105 @@ class GF_RCP
         add_action( 'admin_enqueue_scripts', array( $this, 'styles' ) );
     }
 
+	/**
+	 * Enqueue stylesheets
+	 *
+	 * @since 1.0.0
+	 *
+	 * @see GF_RCP::get_plugin_url()
+	 * @see GF_RCP::get_version()
+	 *
+	 */
+
     public function styles() {
         wp_enqueue_style( $this->get_id() . '-styles', $this->get_plugin_url() . '/assets/css/admin-styles.css', array(), $this->get_version() );
-        $something ="yes";
     }
+
+	/**
+	 * Get the Plugin URL
+	 *
+	 * @since 1.0.0
+	 *
+	 * @see GF_RCP::get_plugin_file()
+	 *
+	 * @return string
+	 */
 
     public function get_plugin_url() {
         return plugin_dir_url( $this->get_plugin_file() );
     }
 
+	/**
+	 * Get the Plugin Directory Path
+	 *
+	 * @since 1.0.0
+	 *
+	 * @see GF_RCP::get_plugin_file()
+	 *
+	 * @return string
+	 */
+
     public function get_plugin_dir() {
         return plugin_dir_path( $this->get_plugin_file() );
     }
 
+	/**
+	 * Get the Plugin File Path
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return string
+	 */
+
     public function get_plugin_file() {
         return __FILE__;
     }
+
+	/**
+	 * Checks for required plugins.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return bool
+	 */
 
     protected function check_required_plugins() {
         return true;
     }
 
     /**
-     * Return the version of the plugin
+     * Return the version of the plugin.
      *
-     * @return string
      * @since  1.0.0
      *
+     * @return int
      */
     public function get_version() {
         return self::$_version;
     }
 
     /**
-     * Returns the plugin ID. Used in the textdomain
+     * Returns the plugin ID. Used in the textdomain.
      *
-     * @return string
      * @since  1.0.0
      *
+     * @return string
      */
     public function get_id() {
         return 'gfrcp';
     }
 
 }
+
+/**
+ * Calls the instance of the class.
+ *
+ * @since 1.0.0
+ *
+ * @see GF_RCP::get_instance()
+ *
+ * @return object
+ */
 
 function gf_rcp() {
     return GF_RCP::get_instance();
