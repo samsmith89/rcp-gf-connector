@@ -8,12 +8,23 @@ use GFForms;
 use GFAddOn;
 use RGFormsModel;
 
+/**
+ * Handles functionality related to Gravity Form fields.
+ *
+ * @since 1.0.0
+ */
+
 class Fields {
-
+	/**
+	 * @var
+	 */
 	protected static $_instance;
-	public $choices;
 
-	public static $levels;
+	/**
+	 * @since 1.0.0
+	 *
+	 * @return self
+	 */
 
 	public static function get_instance() {
 		if ( ! self::$_instance instanceof Fields ) {
@@ -23,13 +34,19 @@ class Fields {
 		return self::$_instance;
 	}
 
+	/**
+	 * Adds actions and filters related to Gravity Forms fields.
+	 *
+	 * @since 1.0.0
+	 */
+
 	protected function __construct() {
-		add_action( 'gform_field_standard_settings', [ $this, 'my_standard_settings' ], 10, 2 );
+		add_filter( 'gform_product_info', [ $this, 'add_membership_to_product' ], 10, 3 );
+		add_action( 'gform_field_standard_settings', [ $this, 'membership_standard_settings' ], 10, 2 );
 		add_action( 'gform_editor_js', [ $this, 'editor_script' ] );
 		add_filter( 'gform_tooltips', [ $this, 'add_gfrcp_tooltips' ] );
 		add_action( 'gform_editor_js_set_default_values', [ $this, 'set_defaults' ] );
 		add_filter( 'gform_field_css_class', [ $this, 'custom_class' ], 10, 3 );
-		add_filter( 'gform_product_info', [ $this, 'add_membership_to_product' ], 10, 3 );
 		add_filter( 'gform_gravityformsstripe_feed_settings_fields', [
 			$this,
 			'update_feed_settings_fields_stripe'
@@ -51,6 +68,19 @@ class Fields {
 //		add_filter( 'gform_submission_data_pre_process_payment', [ $this, 'add_membership_field_subscription' ], 10, 4 );
 	}
 
+	/**
+	 * Adds the membership fields to the products array.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @see gf_apply_filters( array( 'gform_product_info', $form['id'] ), $product_info, $form, $lead );
+     *
+	 * @param array $product_info The selected products, options, and shipping details for the current entry.
+	 * @param array $form         The form object used to generate the current entry.
+	 * @param array $lead         The current entry object.
+	 * @return array $product_info.
+	 */
+
 	public static function add_membership_to_product( $product_info, $form, $lead ) {
 		$membership_field                                       = GFAPI::get_fields_by_type( $form, [ 'membership' ] );
 		$membership_level                                       = rgexplode( '|', $lead[ $membership_field[0]['id'] ], 2 );
@@ -61,11 +91,23 @@ class Fields {
 			'options'  => []
 
 		];
-
 		return $product_info;
 	}
 
-	public static function gfrcp_get_rcp_levels() {
+	/**
+	 * Summary.
+	 *
+	 * Description.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @see RCP_Levels::get_levels();
+	 * @see RCP_Levels::update_meta();
+     *
+	 * @return array The RCP levels that are connected to gfrcp.
+	 */
+
+	public function gfrcp_get_rcp_levels() {
 		$levels_db       = new RCP_Levels();
 		$levels          = $levels_db->get_levels( array( 'status' => 'active' ) );
 		$is_gfrcp_levels = [];
@@ -75,11 +117,24 @@ class Fields {
 				$is_gfrcp_levels[] = $level;
 			}
 		}
-
 		return $is_gfrcp_levels;
 	}
 
-	public function my_standard_settings( $position, $form_id ) {
+	/**
+	 * Adds membership settings to the Membership field.
+     *
+     * Inserts additional content within the General field settings.
+     * Note: This action fires multiple times.  Use the first parameter to determine positioning on the list.
+	 *
+	 * @since 1.0.0
+     *
+     * @see do_action( 'gform_field_standard_settings', 0, $form_id );
+	 *
+	 * @param int 0        The placement of the action being fired
+	 * @param int $form_id The current form ID
+	 */
+
+	public function membership_standard_settings( $position, $form_id ) {
 		if ( $position == 25 ) {
 			?>
             <li class="membership_product_field_type_setting field_setting">
@@ -107,7 +162,7 @@ class Fields {
                     <option value="select">Choose a Membership</option>
 					<?php
 
-					foreach ( self::gfrcp_get_rcp_levels() as $level ) {
+					foreach ( $this->gfrcp_get_rcp_levels() as $level ) {
 						echo '<option value="' . $level->name . '" data-price="' . rcp_currency_filter( $level->price ) . '">' . $level->name . ' - ' . rcp_currency_filter( $level->price ) . '</option>';
 					}
 
@@ -117,6 +172,14 @@ class Fields {
 			<?php
 		}
 	}
+
+	/**
+	 * Adds JavaScript to the form editor
+	 *
+	 * @since 1.0.0
+	 *
+	 * @see do_action( 'gform_editor_js' );
+	 */
 
 	public function editor_script() {
 		?>
@@ -128,17 +191,40 @@ class Fields {
             //binding to the load field settings event to initialize the checkbox
             jQuery(document).on('gform_load_field_settings', function (event, field, form) {
                 jQuery('#field_gfrcp_value').attr('checked', field.gfrcpField == true);
-                // jQuery('#field_gfrcp_value').attr('checked', field.gfrcpField == true);
             });
         </script>
 		<?php
 	}
+
+	/**
+	 * Adds Tooltips to the form editor.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @see add_filter( 'gform_tooltips', array( $this, 'add_tooltips' ) );
+	 *
+	 * @param array $tooltips Array containing the available tooltips.
+	 * @return array $tooltips.
+	 */
 
 	public function add_gfrcp_tooltips( $tooltips ) {
 		$tooltips['form_field_gfrcp_value'] = "<h6>Memberships</h6>Select from your available memberships here";
 
 		return $tooltips;
 	}
+
+	/**
+	 * Adds a custom classes to the Membership field.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @see gf_apply_filters( array( 'gform_field_css_class', $form_id ), trim( $css_class ), $field, $form );
+     *
+	 * @param array $classes
+	 * @param object $field
+	 * @param object $form
+	 * @return array The array of classes for the field types.
+	 */
 
 	public function custom_class( $classes, $field, $form ) {
 		if ( $field->type == 'membership' ) {
@@ -149,9 +235,20 @@ class Fields {
 		return $classes;
 	}
 
+	/**
+	 * Sets the default choices of the Membership field to the connected membership levels in RCP.
+     *
+     * Note: This hook fires in the middle of a JavaScript switch statement.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @see Fields::gfrcp_get_rcp_levels()
+	 * @see rcp_currency_filter()
+	 */
+
 	public function set_defaults() {
 		$choices = [];
-		foreach ( self::gfrcp_get_rcp_levels() as $level ) {
+		foreach ( $this->gfrcp_get_rcp_levels() as $level ) {
 			$choice    = 'new Choice("' . $level->name . ' - ' . rcp_currency_filter( $level->price ) . '", ' . json_encode( $level->name ) . ', "' . rcp_currency_filter( $level->price ) . '")';
 			$choices[] = $choice;
 		}
@@ -165,6 +262,17 @@ class Fields {
         break;
 		<?php
 	}
+
+	/**
+	 * Adds the useremail field to the list of available choices in the Stripe feed settings.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @see apply_filters( "gform_{$this->_slug}_feed_settings_fields", $feed_settings_fields, $this );
+	 *
+	 * @param array $feed_settings_fields An array of feed settings fields which will be displayed on the Feed Settings edit view.
+	 * @return array
+	 */
 
 	public function update_feed_settings_fields_stripe( $feed_settings_fields ) {
 		$feed_settings_fields[4]['fields'][0]['field_map'][0]['field_type'][] = "useremail";

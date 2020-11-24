@@ -20,6 +20,7 @@ class Gateways {
 	public static $gfrcp_expiration_date = '';
 	public static $gfrcp_fee_enabled = '';
 	public static $gfrcp_fee_amount = '';
+	public static $gfrcp_recurring_times = '0';
 
 	public static function get_instance() {
 		if ( ! self::$_instance instanceof Gateways ) {
@@ -35,6 +36,7 @@ class Gateways {
 		add_action( 'gform_post_add_subscription_payment', [ $this, 'gfrcp_process_subscription' ], 10, 2 );
 		add_filter( 'gform_submission_data_pre_process_payment', [ $this, 'gfrcp_process_trial' ], 10, 4 );
 		add_filter( 'gform_submission_data_pre_process_payment', [ $this, 'gfrcp_process_fee' ], 10, 4 );
+		add_filter( 'gform_submission_data_pre_process_payment', [ $this, 'gfrcp_process_recurring_times' ], 10, 4 );
 	}
 	// gform_post_subscription_started: FOR SUBSCRIPTION PAYMENTS
 	// gform_post_payment_completed: FOR SINGLE PAYMENTS
@@ -137,28 +139,49 @@ class Gateways {
 
 				$payment_obj->update( $latest_pending_payment->id, $payment_data );
 			}
-
-//			$defaults = [
-//				'status' => 'active',
-//			];
-//
-//			rcp_update_membership( gform_get_meta( $entry['id'], 'gfrcp_membership_id' ), $defaults );
 		}
 	}
 
 	public function gfrcp_process_trial( $submission_data, $feed, $form, $entry ) {
 		if ( $this->check_if_gfrcp( $form ) ) {
 			self::$gfrcp_trial_enabled = $feed['meta']['trial_enabled'];
-			if ( self::$gfrcp_trial_enabled == true ) {
-				if ( $feed['addon_slug'] === 'gravityformsstripe' ) {
+			if ( $feed['addon_slug'] === 'gravityformsstripe' ) {
+				if ( self::$gfrcp_trial_enabled == true ) {
 					$trial_length                = $feed['meta']['trialPeriod'];
 					$expiration_unit             = $feed['meta']['billingCycle_unit'];
-					self::$gfrcp_expiration_date = $this->gfrcp_calculate_trial( $feed, $expiration_unit, $trial_length );
+					self::$gfrcp_expiration_date = $this->gfrcp_calculate_expiration( $feed, $expiration_unit, $trial_length );
+				} else {
+					$expiration_unit             = $feed['meta']['billingCycle_unit'];
+					$billing_length              = $feed['meta']['billingCycle_length'];
+					self::$gfrcp_expiration_date = $this->gfrcp_calculate_expiration( $feed, $expiration_unit, $billing_length );
 				}
-				if ( $feed['addon_slug'] === 'gravityformspaypal' ) {
+			}
+			if ( $feed['addon_slug'] === 'gravityformspaypal' ) {
+				if ( self::$gfrcp_trial_enabled == true ) {
 					$trial_length                = $feed['meta']['trialPeriod_length'];
 					$expiration_unit             = $feed['meta']['trialPeriod_unit'];
-					self::$gfrcp_expiration_date = $this->gfrcp_calculate_trial( $feed, $expiration_unit, $trial_length );
+					self::$gfrcp_expiration_date = $this->gfrcp_calculate_expiration( $feed, $expiration_unit, $trial_length );
+				} else {
+					$expiration_unit             = $feed['meta']['billingCycle_unit'];
+					$billing_length              = $feed['meta']['billingCycle_length'];
+					self::$gfrcp_expiration_date = $this->gfrcp_calculate_expiration( $feed, $expiration_unit, $billing_length );
+				}
+			}
+			if ( $feed['addon_slug'] === 'gravityformspaypalpaymentspro' ) {
+				$expiration_unit             = $feed['meta']['payPeriod'];
+				$billing_length              = $feed['meta']['billingCycle_length'];
+				self::$gfrcp_expiration_date = $this->gfrcp_calculate_expiration( $feed, $expiration_unit, $billing_length );
+			}
+		}
+
+		return $submission_data;
+	}
+
+	public function gfrcp_process_recurring_times( $submission_data, $feed, $form, $entry ) {
+		if ( $this->check_if_gfrcp( $form ) ) {
+			if ( $feed['addon_slug'] === 'gravityformspaypal' ) {
+				if ( ! empty( $feed['meta']['recurringTimes'] ) ) {
+					self::$gfrcp_recurring_times = $feed['meta']['recurringTimes'];
 				}
 			}
 		}
@@ -174,7 +197,6 @@ class Gateways {
 					$field_id               = $feed['meta']['setupFee_product'];
 					$field                  = GFAPI::get_field( $form, $field_id );
 					self::$gfrcp_fee_amount = GFFormsModel::get_field_value( $field )[ $field_id . '.2' ];
-//					self::$gfrcp_fee_amount = $feed['meta']['setupFee_product'];
 				}
 			}
 			if ( $feed['addon_slug'] === 'gravityformspaypal' ) {
@@ -225,8 +247,7 @@ class Gateways {
 		return self::$transaction_id;
 	}
 
-	public function gfrcp_calculate_trial( $feed, $expiration_unit, $expiration_length ) {
-
+	public function gfrcp_calculate_expiration( $feed, $expiration_unit, $expiration_length ) {
 		$current_time = current_time( 'timestamp' );
 
 		$expiration_timestamp = strtotime( '+' . $expiration_length . ' ' . $expiration_unit . ' 23:59:59', $current_time );

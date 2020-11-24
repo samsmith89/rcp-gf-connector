@@ -123,6 +123,7 @@ class GravityFeed extends GFFeedAddOn {
 		$password            = $this->get_field_value( $form, $entry, rgar( $feed['meta'], 'RCPMembershipFields_rcp_password' ) );
 		$membership_level_id = $feed['meta']['RCPMembershipFields_membership'];
 		$membership_level    = rgexplode( '|', $entry[ $membership_level_id ], 2 );
+		$membership_level_name = strtok($membership_level[0], ' - $');
 
 		/* Router to determine which payment gateway is being used */
 		global $gf_payment_gateway;
@@ -147,6 +148,18 @@ class GravityFeed extends GFFeedAddOn {
 		/* Create user */
 		$user_id = wp_create_user( $username, $password, $email );
 
+		$creds = array(
+			'user_login'    => $username,
+			'user_password' => $password,
+			'remember'      => true
+		);
+
+		$user = wp_signon( $creds, false );
+
+		if ( is_wp_error( $user ) ) {
+			echo $user->get_error_message();
+		}
+
 		/* Create RCP Customer */
 		$customer_id = rcp_add_customer( [ 'user_id' => $user_id ] );
 
@@ -157,40 +170,29 @@ class GravityFeed extends GFFeedAddOn {
 
 		/* Loop through fields to determine the membership level */
 		foreach ( $levels as $level ) {
-			if ( $level->name === $membership_level[0] ) {
+			if ( $level->name === $membership_level_name ) {
 				$level_id = $level->id;
 			}
 		}
 
 		/* Defaults for all memberships */
 		$membership_defaults = [
-			'inital_amount'    => $entry['payment_amount'],
+			'inital_amount'    => 0.00,
 			'recurring_amount' => $membership_level[1],
 			'auto_renew'       => true,
 			'times_billed'     => '1',
+			'maximum_renewals' => Gateways::$gfrcp_recurring_times,
 			'customer_id'      => $customer_id,
 			'object_id'        => $level_id,
 			'status'           => 'pending',
 			'gateway'          => $payment_gateway,
-			'activated_date'   => current_time( 'mysql' )
+			'activated_date'   => current_time( 'mysql' ),
+			'expiration_date'  => Gateways::$gfrcp_expiration_date,
 		];
 
 		/* If membership level is trialing mark that here */
 		if ( ( Gateways::$gfrcp_trial_enabled == true ) ) {
-			$customer        = rcp_get_customer( $customer_id );
-			$has_trial       = true;
-			$set_trial       = ( $has_trial && ! $customer->has_trialed() );
-			$expiration_date = Gateways::$gfrcp_expiration_date;
-
-			/* Auto calculate expiration */
-			if ( empty( $membership_defaults['expiration_date'] ) && ! empty( $expiration_date ) ) {
-				$membership_defaults['expiration_date'] = $expiration_date;
-			}
-
-			/*Auto calculate trial end date. */
-			if ( $set_trial && empty( $membership_defaults['trial_end_date'] ) && ! empty( $expiration_date ) ) {
-				$membership_defaults['trial_end_date'] = $expiration_date;
-			}
+			$membership_defaults['trial_end_date'] = Gateways::$gfrcp_expiration_date;
 		}
 
 		/* Create the membership */
@@ -203,15 +205,15 @@ class GravityFeed extends GFFeedAddOn {
 		$payment_obj = new RCP_Payments();
 
 		$payment_data = [
-			'subscription'     => $membership_level[0],
+			'subscription'     => $membership_level_name,
 			'object_id'        => $membership->get_object_id(),
-			'object_type'      => $membership->get_object_type(),
+			'object_type'      => 'subscription',
 			'date'             => date( 'Y-m-d H:i:s', current_time( 'timestamp' ) ),
 			'amount'           => $membership_level[1],
 			'user_id'          => $membership->get_user_id(),
 			'customer_id'      => $membership->get_customer_id(),
 			'membership_id'    => $membership->get_id(),
-			'payment_type'     => '',
+			'payment_type'     => 'Credit Card',
 			'transaction_type' => 'new',
 			'subscription_key' => '',
 			'transaction_id'   => '',
@@ -237,7 +239,7 @@ class GravityFeed extends GFFeedAddOn {
 			$gf_pay_func = new RGCurrency( $currency );
 
 			$clean_fee              = $gf_pay_func->to_number( Gateways::$gfrcp_fee_amount );
-			$payment_data['fees']   = $clean_fee ;
+			$payment_data['fees']   = $clean_fee;
 			$payment_data['amount'] = $clean_fee + $membership_level[1];
 		}
 

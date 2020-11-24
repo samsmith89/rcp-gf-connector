@@ -5,7 +5,7 @@ namespace GF_RCP;
 use RCP_Levels;
 
 /**
- * Handles functionality around Levels in RCP.
+ * Handles functionality related to Membership Levels in RCP.
  *
  * @since 1.0.0
  *
